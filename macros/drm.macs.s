@@ -343,11 +343,11 @@ Item     MAC
          ASC   ]1         
          ASC   '\H'       
          DA    ]inum      
-         DO    ]0/2       
-         DO    ]2-Check-1/-1 
+         DO    ]0/2
+         DO    ]2-Check-1/$FFFF
          DA    ]2         
          ELSE  
-         DO    ]2-Blank-1/-1 
+         DO    ]2-Blank-1/$FFFF
          DA    ]2         
          ELSE  
          DB    ]2         
@@ -356,10 +356,10 @@ Item     MAC
          FIN   
          FIN   
          DO    ]0/4       
-         DO    ]4-Check-1/-1 
+         DO    ]4-Check-1/$FFFF
          DA    ]4         
          ELSE  
-         DO    ]4-Blank-1/-1 
+         DO    ]4-Blank-1/$FFFF
          DA    ]4         
          ELSE  
          DB    ]4         
@@ -368,10 +368,10 @@ Item     MAC
          FIN   
          FIN   
          DO    ]0/6       
-         DO    ]6-Check-1/-1 
+         DO    ]6-Check-1/$FFFF
          DA    ]6         
          ELSE  
-         DO    ]6-Blank-1/-1 
+         DO    ]6-Blank-1/$FFFF
          DA    ]6         
          ELSE  
          DB    ]6         

@@ -163,22 +163,22 @@ GetEvent
 
 ]mnum    =     0          ; "1" - 1 = 0
 AppleM   Menu  '@';'X'
-]inum    =     255
+]inum    =     256
          Item  'About...';Divide;'';Kybd;'?/'
 
 FileM    Menu  ' File '
                           ; Item 'New';Kybd;'Nn'
          Item  'Open...';Divide;'';Kybd;'Oo'
          Item  'Automatic';Divide;'';Kybd;'Aa'
-OpenItem =     ]inum
-]inum    =     254
+]OpenItem =     ]inum
+]inum    =     255
          Item  'Close';Divide;'' ; (#255)
-]inum    =     OpenItem
+]inum    =     ]OpenItem
          Item  'Quit';Kybd;'Qq'
-QuitItem =     ]inum
+]QuitItem =     ]inum
 
 EditM    Menu  ' Edit '
-]inum    =     249
+]inum    =     250
          Item  'Undo';Divide;'';Kybd;'Zz' ; (#250)
          Item  'Cut';Kybd;'Xx' ; (#251)
          Item  'Copy';Kybd;'Cc' ; (#252)
