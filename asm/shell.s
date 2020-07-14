@@ -119,8 +119,8 @@ DoMenu
 
          _InitCursor
 
-         JSR   DoAbout    ; Show this to the user before we get going...
-
+         JSR    DoAbout    ; Show this to the user before we get going...
+         JSR    DoOpen   
 
 *  Command Processor
 *
@@ -366,7 +366,7 @@ AboutTemplate
          da    0
          adrl  0
 :Item3Txt
-         str   '(C)  DreamWorld Software 2020'
+         str   '(C)2020 DreamWorld Software'
 
 :Item2   dw    2
          dw    13,122,22,251 ;rect
