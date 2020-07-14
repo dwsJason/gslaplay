@@ -161,7 +161,13 @@ GetEvent
 *  Menu definitions
 *
 
-]mnum    =     0          ; "1" - 1 = 0
+*
+*NOTE Currently setup for Merlin32
+*for Merlin 16, adjust the ]mnum, and ]inum definitions down by 1
+*due to how merlin 16 will scope / evaluate them inside the macro
+*
+
+]mnum    =     1          ; "1" - 1 = 0
 AppleM   Menu  '@';'X'
 ]inum    =     256
          Item  'About...';Divide;'';Kybd;'?/'
@@ -169,7 +175,6 @@ AppleM   Menu  '@';'X'
 FileM    Menu  ' File '
                           ; Item 'New';Kybd;'Nn'
          Item  'Open...';Divide;'';Kybd;'Oo'
-         Item  'Automatic';Divide;'';Kybd;'Aa'
 ]OpenItem =     ]inum
 ]inum    =     255
          Item  'Close';Divide;'' ; (#255)
@@ -332,7 +337,6 @@ Cmds
          da    DoAbout    ;This starts OUR items. (#256)
 
          da    DoOpen
-         da    DoAutomatic
          da    ShutDown
 
 *
@@ -362,7 +366,7 @@ AboutTemplate
          da    0
          adrl  0
 :Item3Txt
-         str   '(C)  DreamWorld Software 1991'
+         str   '(C)  DreamWorld Software 2020'
 
 :Item2   dw    2
          dw    13,122,22,251 ;rect
@@ -371,7 +375,7 @@ AboutTemplate
          da    0
          da    0
          adrl  0
-:Item2Txt str  'DreamStamp  v0.8'
+:Item2Txt str  'GSLA Player v1.0'
 
 :Item1   da    1
          dw    66,272,78,350 ;rect
@@ -442,8 +446,10 @@ DoOpen
 
 :message str   'Select File to Open:'
 
-:filter  dw    1          ;only show s16 files
-         dw    0,$b3,0,0  ;flags, filetype, auxtype
+:filter  dw    0          ; (count 0/no filter), set to 1 for only show s16 files
+
+*         dw    1          ; (count 1) Show only s16 files
+*         dw    0,$b3,0,0  ;flags, filetype, auxtype
 
 p:close
 p:open   dw    1          ;ref number
@@ -1122,8 +1128,6 @@ changestats
          str   'Mask:'
 
 vernum   dw    0          ;version number 0 - 3
-
-DoAutomatic
 
 DoUndo
 DoCut
