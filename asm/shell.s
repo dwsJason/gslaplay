@@ -170,7 +170,7 @@ GetEvent
 ]mnum    =     1          ; "1" - 1 = 0
 AppleM   Menu  '@';'X'
 ]inum    =     256
-         Item  'About...';Divide;'';Kybd;'?/'
+         Item  'About GSLA...';Divide;'';Kybd;'?/'
 
 FileM    Menu  ' File '
                           ; Item 'New';Kybd;'Nn'
@@ -444,7 +444,7 @@ DoOpen
          rtl
 
 
-:message str   'Select File to Open:'
+:message str   'Open GS Lzb Anim:'
 
 :filter  dw    0          ; (count 0/no filter), set to 1 for only show s16 files
 
@@ -468,30 +468,7 @@ p:where  adrl  $1c000     ;about 108k into file
 
 
 DoSave
-         _Open p:open
-         bcs   :trouble
-
-         lda   p:open
-         sta   p:read
-         sta   p:setmark
-
-         _SetMark p:setmark
-         bcs   :trouble
-
-         _Write p:write
-         bcs   :trouble
-
-         _Close p:close
-         bcs   :trouble
          rts
-
-:trouble
-         pha
-         PushLong #0
-         ldx   #$1503
-         jsl   $e10000
-         rtl
-
 
 changestats
          lda   iobuff
