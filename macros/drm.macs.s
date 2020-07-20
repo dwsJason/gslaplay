@@ -226,6 +226,10 @@ _SetMark mac
          DOS16 $16;]1
          eom
 
+_GET_EOF	MAC
+	DOS16	$19;]1
+	<<<
+
 DOS16    MAC   
          JSL   $E100A8    
          DA    ]1         

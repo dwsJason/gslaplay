@@ -14,12 +14,12 @@
 	lna play	; load name
 	sna start	; segment name
 *----------------------------------------------	
-;	asm dbgfnt.s
-;	ds 0		; padding
-;	knd #$1100  ; kind
-;	ali None    ; alignment
-;	lna fun2gs    ; load name
-;	sna start  ; segment name, doesn't work to try and merge segments here
+	asm play.s
+        ds 0		; padding
+	knd #$1100  ; kind
+	ali None    ; alignment
+	lna play    ; load name
+	sna start   ; segment name, doesn't work to try and merge segments here
 *----------------------------------------------	
 ;	asm lz4.s
 ;	ds 0		; padding

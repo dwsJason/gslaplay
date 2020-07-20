@@ -4,6 +4,8 @@
 *
 *     v .02    10/8/90
 *
+*  Updated for Merlin 32  07/11/2020
+*
 
 *   OA-F  "damnmenu" to find menu definitions
 *
@@ -11,6 +13,8 @@
          rel
          dsk   shell.l
          use   drm.macs
+
+         ext   player
 
 
 vidmode  =     $8080      ;Video mode for QD II (320) ($8000)
@@ -53,6 +57,48 @@ SetRes   sep   $30        ; 8-bit mode
          ldx   #$1801     ;startuptools
          jsl   $e10000
          PullLong stref
+
+;-------------------------------------------------------------------------------
+         PushLong  #0                   ; Compact Memory
+         PushLong  #$8fffff
+         PushWord  ProgID
+         PushWord  #%11000000_00000000
+         PushLong  #0
+         ldx   #$0902
+         jsl   tool       ; NewHandle
+         ldx   #$1002
+         jsl   tool       ; DisposeHandle
+         ldx   #$1F02
+         jsl   tool       ; CompactMem
+;-------------------------------------------------------------------------------
+;         PushLong  #0                   ; Ask Shadowing Screen ($8000 bytes from $01/2000)
+;         PushLong  #$8000
+;         PushWord  ProgID
+;         PushWord  #%11000000_00000011
+;         PushLong  #$012000
+;         ldx   #$0902
+;         jsl   tool       ; NewHandle
+;         pla
+;         pla
+;         bcc :NoError
+;
+;         lda #0
+;         pha
+;         pha
+;         pha
+;         pha
+;         PushLong #:shadow_error
+;         Tool $590e ; AlertWindow
+;         pla
+;         brl ShutDown
+;
+;;-------------------------------------------------------------------------------
+;
+;:shadow_error asc '40\GSLA Player requires the Super Hires shadow'
+;        asc ' memory to function properly.\^#5',00
+;
+;*-----------------------------
+:NoError
          jmp   DoMenu
 
 :trouble
@@ -423,16 +469,46 @@ DoOpen
 
          lda   p:open
          sta   p:read
-         sta   p:setmark
-         _SetMark p:setmark
-         bcs   :trouble
+         sta   p:get_eof
+
+         _GET_EOF p:get_eof
+         bcc   :eof_seems_good
+:err_close
+         _Close p:close
+         bra    :trouble
+
+:eof_seems_good
+
+*
+*  Allocate memory for loading the animation
+*  Will do an allocation per 64k required, since
+*  this type of animation requires, the file be bank aligned
+*  so will load in 64KB chunks
+*
+*
+* I've decided that using Tools to spawn a dialog with a loading meter
+* is actually more work (mentally), than just stomping on the frame buffer
+*
+         lda p:eof
+         ldx p:eof+2
+         jsr getmem
+         bcs :err_close
+
+         jsl dereference
+         sta p:rbuf
+         stx p:rbuf+2
+
+         lda p:eof
+         ldx p:eof+2
+         sta p:rsize
+         stx p:rsize+2
 
          _Read p:read
-         bcs   :trouble
+         bcs   :err_close
 
          _Close p:close
          bcs   :trouble
-         brl   changestats
+         brl   PlayAnimation
 
 :temp    dw    0
 
@@ -459,8 +535,11 @@ p:open   dw    1          ;ref number
 p:write
 p:read   dw    0
 p:rbuf   adrl  0
-         adrl  $8000      ;number requested  32k
+p:rsize  adrl  $10000     ;number requested  64k
          adrl  0          ;number transfered
+
+p:get_eof dw 0     ; reference number
+p:eof     adrl 0   ; end of file
 
 p:setmark
          dw    0          ;ref number
@@ -470,641 +549,17 @@ p:where  adrl  $1c000     ;about 108k into file
 DoSave
          rts
 
-changestats
-         lda   iobuff
-         sta   :modify+1
-         lda   iobuff+1
-         sta   :modify+2
+PlayAnimation
 
-         ldx   #0
-:modify  ldal  $030000,x
-         cmp   text+1
-         beq   :cont
-         cpx   #$ffff
-         beq   :nope
-         inx
-         bra   :modify
-:nope
-         rts
-:cont
-         lda   text
-         and   #$00ff
-                          ; dec
-         sta   :temp
 
-         stx   offset
-         txy
-         iny
-         ldx   #0
-:lup     lda   [iobuff],y
-         inx
-         iny
-         cmp   text+1,x
-         bne   :goback
-         cpx   :temp
-         cpx   #6
-         bcc   :lup
-         bra   :dodialog
 
-:temp    dw    0
+        lda p:rbuf
+        ldx p:rbuf+2
 
-:goback
-         ldx   offset
-         inx
-         brl   :modify
+:play   jsl $000000
 
-:dodialog
-         PushLong #0
-         PushLong #:getinfo
-         Tool  $3215      ;new dialog
-         PullLong :pointer
+        rts
 
-         brl   :initialize
-
-]lp
-         pea   #0
-         PushLong #0
-         Tool  $0f15      ;modal dialog
-
-         pla
-         beq   ]lp
-         cmp   #1
-         beq   :okay
-         cmp   #2
-         beq   :cancel
-         cmp   #7
-         bcs   ]lp
-         brl   :toggle
-
-:cancel
-         PushLong :pointer
-         Tool  $0c15      ;close dialog
-         rts
-
-:initnew
-         ldx   #0
-         sep   #$20
-         lda   #' '
-]dup     sta   newname,x
-         inx
-         cpx   #textlength+1
-         bcc   ]dup
-         rep   #$30
-         rts
-
-:okay
-
-         jsr   :initnew   ;initialize newname area
-
-         PushLong :pointer
-         pea   #8         ;name of user
-         PushLong #newname ;place to put the name
-         Tool  $1f15      ;GetIText
-
-         PushLong :pointer
-         pea   #9         ;new serial number
-         PushLong #newser ;place to put the name
-         Tool  $1f15      ;GetIText
-
-         jsr   :putser
-         bcs   ]lp
-
-         lda   vernum
-         asl
-         tax
-         jsr   (:encode,x)
-
-         PushLong :pointer
-         Tool  $0c15      ;close dialog
-
-         jmp   DoSave     ;it's over
-
-:putser                   ;low word
-         sep   #$20
-         ldy   #0
-:lloop
-         lda   rserial,y  ;location of serial string
-         ldx   #0
-:bloop   cmp   :ascii,x
-         beq   :okay2
-         inx
-         cpx   #17
-         bcc   :bloop
-         rep   #$30
-         sec
-         rts
-
-         sep   #$20
-:okay2
-         txa
-         sta   :teeem,y
-         iny
-         cpy   #8
-         bcc   :lloop
-
-         lda   :teeem
-         asl
-         asl
-         asl
-         asl
-         ora   :teeem+1
-         sta   :value+3
-
-         lda   :teeem+2
-         asl
-         asl
-         asl
-         asl
-         ora   :teeem+3
-         sta   :value+2
-
-         lda   :teeem+4
-         asl
-         asl
-         asl
-         asl
-         ora   :teeem+5
-         sta   :value+1
-
-         lda   :teeem+6
-         asl
-         asl
-         asl
-         asl
-         ora   :teeem+7
-         sta   :value
-
-         rep   #$30
-
-         ldy   serloc
-         lda   :value
-         sta   [iobuff],y
-         lda   :value+2
-         iny
-         iny
-         sta   [iobuff],y
-
-         clc
-         rts
-
-
-:teeem   dw    0,0,0,0    ;8 bit mode
-         asc   'shit'
-:value   dw    0,0
-
-
-:encode
-         da    :sc1
-         da    :sc2
-         da    :sc3
-         da    :sc4
-
-:sc1
-         sep   #$20
-         ldx   #0
-         ldy   texloc
-:her0
-         lda   newname+1,x
-         sec
-         sbc   maskval
-         sta   [iobuff],y
-         inx
-         dey
-         cpx   #textlength+1
-         bcc   :her0
-         rep   #$30
-         rts
-
-:sc2
-         sep   #$20
-         ldx   #0
-         ldy   texloc
-:her1
-         lda   newname+1,x
-         sec
-         sbc   maskval
-         sta   [iobuff],y
-         inx
-         dey
-         cpx   #textlength+1
-         bcc   :her1
-         rep   #$30
-         rts
-
-:sc3
-:sc4
-         rts
-
-:toggle
-         sec
-         sbc   #3         ;make value 0-3
-         sta   vernum     ;version number
-         asl
-         asl
-         asl
-         tax
-         phx
-         lda   :val,x
-         pha
-         PushLong :pointer
-         pea   #3         ;item number
-         Tool  $2f15      ;setditemvalue
-
-         plx
-         phx
-         lda   :val+2,x
-         pha
-         PushLong :pointer
-         pea   #4         ;item number
-         Tool  $2f15      ;setditemvalue
-
-         plx
-         phx
-         lda   :val+4,x
-         pha
-         PushLong :pointer
-         pea   #5         ;item number
-         Tool  $2f15      ;setditemvalue
-
-         plx
-         lda   :val+6,x
-         pha
-         PushLong :pointer
-         pea   #6         ;item number
-         Tool  $2f15      ;setditemvalue
-
-         lda   vernum
-         asl
-         tax
-         lda   :maskval,x
-         sta   maskval
-         and   #$f000
-         xba
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   maskstr+2
-         rep   #$30
-         lda   maskval
-         and   #$0f00
-         xba
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   maskstr+3
-         rep   #$30
-         lda   maskval
-         and   #$00f0
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   maskstr+4
-         rep   #$30
-         lda   maskval
-         and   #$000f
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   maskstr+5
-         rep   #$30
-
-         PushLong :pointer
-         pea   #10        ;mask value
-         PushLong #maskstr
-         Tool  $2015      ;setItext
-         ldy   serloc
-
-         lda   [iobuff],y
-         sta   serval
-         iny
-         iny
-         lda   [iobuff],y
-         sta   serval+2
-
-         and   #$f000
-         xba
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+2
-         rep   #$30
-         lda   serval+2
-         and   #$0f00
-         xba
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+3
-         rep   #$30
-         lda   serval+2
-         and   #$00f0
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+4
-         rep   #$30
-         lda   serval+2
-         and   #$000f
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+5
-         rep   #$30
-
-         lda   serval
-         and   #$f000
-         xba
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+6
-         rep   #$30
-         lda   serval
-         and   #$0f00
-         xba
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+7
-         rep   #$30
-         lda   serval
-         and   #$00f0
-         lsr
-         lsr
-         lsr
-         lsr
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+8
-         rep   #$30
-         lda   serval
-         and   #$000f
-         tax
-         sep   #$20
-         lda   :ascii,x
-         sta   serstr+9
-         rep   #$30
-
-         PushLong :pointer
-         pea   #9         ;serial number
-         PushLong #serstr
-         Tool  $2015      ;setItext
-
-         lda   vernum
-         asl
-         tax
-         lda   offset
-         clc
-         adc   :wheret,x
-         sta   texloc
-
-         jsr   (:decode,x)
-
-         PushLong :pointer
-         pea   #7         ;serial number
-         PushLong #oldname
-         Tool  $2015      ;setItext
-
-         brl   ]lp
-
-
-:decode
-         da    :scheme1
-         da    :scheme2
-         da    :scheme3
-         da    :scheme4
-
-:scheme1
-         sep   #$20
-         ldx   #0
-         ldy   texloc
-:here
-         lda   [iobuff],y
-         clc
-         adc   maskval
-         sta   oldname+1,x
-         inx
-         dey
-         cpx   #textlength+1
-         bcc   :here
-         rep   #$30
-         rts
-
-:scheme2
-         sep   #$20
-         ldx   #0
-         ldy   texloc
-:here2
-         lda   [iobuff],y
-         clc
-         adc   maskval
-         sta   oldname+1,x
-         inx
-         dey
-         cpx   #textlength+1
-         bcc   :here2
-         rep   #$30
-         rts
-
-:scheme3
-         rts
-:scheme4
-         rts
-
-
-:ascii   asc   '0123456789abcdef'
-
-:val
-         dw    1,0,0,0
-         dw    0,1,0,0
-         dw    0,0,1,0
-         dw    0,0,0,1
-
-:maskval dw    $30,$28,0,0 ;different encoding values for each ver number
-
-:wheret  dw    $128,$128,0,0 ;offset to text from end of 'Written by'
-
-:initialize
-
-         lda   text
-         and   #$00ff
-         clc
-         adc   offset
-         sta   offset
-         sta   serloc
-
-         lda   #3         ;version 1
-         brl   :toggle
-
-:pointer adrl  0
-
-:getinfo
-         dw    27,82,185,558 ;position
-         dw    -1         ;visible
-         adrl  0          ;reserved
-         adrl  :item1
-         adrl  :item2
-         adrl  :item3
-         adrl  :item4
-         adrl  :item5
-         adrl  :item6
-         adrl  :item7
-         adrl  :item10
-         adrl  :item9
-         adrl  :item8
-         adrl  :item11
-         adrl  :item12
-         adrl  :item13
-         adrl  :item14
-         adrl  :item15
-         adrl  0          ;terminator
-
-:item1   DA    1
-         dw    137,340,150,430 ;rect
-         DA    ButtonItem
-         adrl  :Item1Txt
-         da    0
-         da    1
-         adrl  0
-:Item1Txt str  'Save'
-
-:item2   DA    2
-         dw    137,210,150,300 ;rect
-         DA    ButtonItem
-         ADRL  :Item2Txt
-         DA    0
-         DA    0
-         ADRL  0
-:Item2Txt STR  'Cancel'
-
-:item3   dw    3
-         dw    23,52,32,160 ;rect
-         dw    CheckItem
-         adrl  :i3text
-:i3val   dw    0,0,0,0
-:i3text  str   ' Version 1'
-
-:item4   dw    4
-         dw    34,52,43,162 ;rect
-         dw    CheckItem
-         adrl  :i5text
-:i5val   dw    0,0,0,0
-:i5text  str   ' Version 2'
-
-:item5   dw    5
-         dw    23,210,32,320 ;rect
-         dw    CheckItem
-         adrl  :i4text
-:i4val   dw    0,0,0,0
-:i4text  str   ' Version 3'
-
-:item6   DA    6
-         dw    34,210,43,322 ;rect
-         dw    CheckItem
-         adrl  :i6text
-:i6val   dw    0,0,0,0
-:i6text  str   ' Version 4'
-
-:item7   dw    7
-         dw    59,125,72,503 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  oldname
-         dw    0,0
-         adrl  0
-
-:item8   dw    8
-         dw    90,50,103,426 ;rect
-         DA    EditLine+ItemDisable
-         adrl  defname
-         dw    textlength
-         dw    0
-         adrl  0
-
-:item9   dw    9
-         dw    119,52,131,150 ;rect
-         DA    EditLine+ItemDisable
-         adrl  serstr
-         dw    9
-         dw    0
-         adrl  0
-
-:item10  dw    10
-         dw    119,200,131,264 ;rect
-         DA    EditLine+ItemDisable
-         adrl  maskstr
-         dw    5
-         dw    0
-         adrl  0
-
-:item11  dw    11
-         dw    8,180,17,287 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  :item11txt
-         dw    0,0
-         adrl  0
-:item11txt
-         dfb   11
-         asc   'DreamStamp'
-         dfb   $AA
-
-:item12  dw    12
-         dw    48,50,57,125 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  :item12txt
-         dw    0,0
-         adrl  0
-:item12txt
-         str   'Current:'
-
-:item13  dw    13
-         dw    79,50,88,91 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  :item13txt
-         dw    0,0
-         adrl  0
-:item13txt
-         str   'New:'
-
-:item14  dw    14
-         dw    108,50,117,161 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  :item14txt
-         dw    0,0
-         adrl  0
-:item14txt
-         str   'Serial Number:'
-
-:item15  dw    15
-         dw    108,200,117,275 ;rect
-         dw    StatTextItem+ItemDisable
-         adrl  :item15txt
-         dw    0,0
-         adrl  0
-:item15txt
-         str   'Mask:'
-
-vernum   dw    0          ;version number 0 - 3
 
 DoUndo
 DoCut
@@ -1114,33 +569,6 @@ DoClear
 DoClose
          RTS
 
-oldname                   ;name in the program
-         dfb   textlength
-         ds    textlength
-         dw    0
-
-defname
-         str   'Joe Hack and The Mercenary'
-
-newser   dfb   0
-         dfb   0
-rserial  ds    8
-
-
-newname  ds    textlength+1
-         dw    0
-
-maskloc  dw    0          ;offset to mask
-maskval  dw    0
-maskstr  str   '$0000'
-
-offset   dw    0
-
-serloc   dw    0          ;offset to serial number
-serstr   str   '$00000000'
-serval   adrl  0
-
-texloc   dw    0          ;offset to beginning of text
-
 text
          str   "Written By:  Jason Andersen and Steven Chiang"
+
