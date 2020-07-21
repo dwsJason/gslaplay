@@ -15,7 +15,7 @@
 	sna start	; segment name
 *----------------------------------------------	
 	asm play.s
-    ds 0		; padding
+        ds 0		; padding
 	knd #$1100  ; kind
 	ali None    ; alignment
 	lna play    ; load name

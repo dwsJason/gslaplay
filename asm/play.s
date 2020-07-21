@@ -44,55 +44,79 @@
 ;        rel
         dsk play.l
 
+;
+; Defines, for the list of allocated memory banks
+;
+banks_count equ $80
+banks_data  equ $82
+
+
 player  ent
         org $0
         mx %00
         phb
-        sep #$30
-        sta srcbank+2           ; self modify the code for mvn
-        sta read_opcode+3       ; data stream reader
-        sta dictionary_offset+3 ; opcode stream reader
+        sep #$20                 ; preserve X
+        sta <srcbank+2           ; self modify the code for mvn
+        sta <read_opcode+3       ; data stream reader
+        sta <dictionary_offset+3 ; opcode stream reader
         rep #$31
         ldy #$2000               ; it's a new frame, cursor starts at beginning of SHR
 
+        stz <banks_index
+*        stz <frames
+
         bra     read_opcode
+*frames dw 0
 
 extended_command
-
+        beq :source_skip_next_bank
         lsr
-        bcs :not_end_of_frame
+        lsr
+        bcs :end_of_file
 
+*        ; end of frame
         ldy #$2000
-        ; check elapsed ticks (need at least 1)
-        ; For now just inline vsync (preferable to check the number of
-        ; if jiffy that have elapsed, because if the animation uses more than
-        ; roughly 10% of the screen we don't want to sync here
-
-
+*        ; check elapsed ticks (need at least 1)
+*        ; For now just inline vsync (preferable to check the number of
+*        ; if jiffy that have elapsed, because if the animation uses more than
+*        ; roughly 10% of the screen we don't want to sync here
+*        lda <frames
+*        inc
+*        sta <frames
+*        cmp #2
+*        bge :end_of_file
+*
         bra read_opcode
 
 :end_of_file
         plb    ; restore bank
         rtl
 
-:not_end_of_frame
-        beq :end_of_file
+:source_skip_next_bank
+*
+* If data is sequential in memory
+*
+*
+*        ; source data, new bank
+*        inc <read_opcode+3        ; 6
+*        inc <dictionary_offset+3  ; 6
+*        inc <srcbank+2            ; 6
+*
 
-        cmp #1
-        bne :not_new_bank
-
-        ;sep #$30           ; 3
-        ;lda <read_opcode+3 ; 3
-        ;inc                ; 2
-        ;sta <read_opcode+3 ; 3
-        ;sta <dictionary_offset+3 ; 3
-        ;sta <srcbank+2     ; 3
-        ;rep #$31           ; 3
-
-        ; source data, new bank
-        inc <read_opcode+3        ; 6
-        inc <dictionary_offset+3  ; 6
-        inc <srcbank+2            ; 6
+*
+* Our Banks of Data are in the order
+* they were allocated, so this is a little
+* more complicated
+*
+        sep #$20        ; preserve Y, by leaving X long
+        ldx <banks_index
+        inx
+        stx <banks_index
+        lda <banks_data,x
+        sta <srcbank+2           ; self modify the code for mvn
+        sta <read_opcode+3       ; data stream reader
+        sta <dictionary_offset+3 ; opcode stream reader
+        rep #$31
 
         ; start of new bank
         ldx #0
@@ -119,14 +143,14 @@ dictionary_copy
         lsr
         bcs cursor_skip
 
-        sta temp
+        sta <temp
 
-        stx dictionary_offset+1
+        stx <dictionary_offset+1
 dictionary_offset
         ldal $000000
         tax
 
-        lda temp
+        lda <temp
         ; dictionary copy
         mvn $01,$01
 
@@ -137,10 +161,12 @@ dictionary_offset
         bra read_opcode
 
 cursor_skip
-        sty temp
-        adc temp
+        sty <skip_amount+1
+skip_amount
+        adc #$0000
         tay
         bra read_opcode
 
+banks_index dw 0
 temp    dw 0
 

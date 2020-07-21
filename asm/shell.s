@@ -17,6 +17,14 @@
          ext   player
 
 
+;
+; Defines, for the list of allocated memory banks
+;
+banks_count equ $80
+banks_data  equ $82
+
+
+
 vidmode  =     $8080      ;Video mode for QD II (320) ($8000)
                           ;640 mode  ($8080)
 
@@ -48,6 +56,14 @@ SetRes   sep   $30        ; 8-bit mode
 
          pla              ;retrieve our program ID
          sta   ProgID
+
+;-------------------------------------------------------------------------------
+;
+; Initialize List of memory Banks
+;
+         stz <banks_count
+
+
 
          PushLong #0      ;result space
          lda   ProgID     ;user ID
@@ -130,6 +146,9 @@ DoMenu
          txa
          sta   p:rbuf+2
          sta   iobuff+2
+
+         ; A contains bank address to add
+         jsr   AddBank
 
 
 * PushLong #0
@@ -467,8 +486,9 @@ DoOpen
          bcc   :lup
 
          _Open p:open
-         bcs   :trouble
-
+         bcc   :read_filesize
+         brl   :trouble
+:read_filesize
          lda   p:open
          sta   p:read
          sta   p:get_eof
@@ -476,6 +496,7 @@ DoOpen
          _GET_EOF p:get_eof
          bcc   :eof_seems_good
 :err_close
+        jsr FreeBanks
          _Close p:close
          bra    :trouble
 
@@ -497,30 +518,73 @@ DoOpen
 ; perhaps loop through, and store a list of allocated banks
 ; starting at $80 in the DP, so DP,x addressing can get at
 ; them in the player		 
-		 
-		 
-         lda p:eof
-         ldx p:eof+2
-         jsr getmem
-         bcs :err_close
+	 
+        ; while banks_count < required_banks
+    
+        lda p:eof+2
+        inc
+        sta :required_banks
+                    
+]loop
+        lda <banks_count
+        cmp :required_banks
+        bcs :we_have_memory
 
-;         jsl dereference
-;         sta p:rbuf
-;         stx p:rbuf+2
+        ; Ask for 64K
+        lda #$0000
+        ldx #$0001
+        jsr getmem
+        bcs :mem_failed
 
-;         lda p:eof
-;         ldx p:eof+2
-;         sta p:rsize
-;         stx p:rsize+2
+        jsl dereference
 
-;         _Read p:read
-;         bcs   :err_close
+        txa
+        jsr AddBank
 
+        bra ]loop
+
+
+:mem_failed
+        jsr FreeBanks
+
+        ; Pop up an Alert
+
+        bra :err_close
+
+:we_have_memory
+              
+        ; Read in the File
+
+        ; Size 64k at a time
+        stz p:rsize
+        lda #$0001
+        sta p:rsize+2
+
+        ldx #0
+        stx p:rbuf+0
+]read_loop
+        lda <banks_data,x
+        and #$00FF
+        sta p:rbuf+2
+
+        phx
+        _Read p:read
+        plx
+       
+        bcs   :err_close
+
+        inx
+        cpx :required_banks
+        bcc ]read_loop
+
+:close_exit
          _Close p:close
          bcs   :trouble
          brl   PlayAnimation
 
-:temp    dw    0
+:required_banks
+:temp
+         dw    0
 
 :trouble
          pha
@@ -528,7 +592,6 @@ DoOpen
          ldx   #$1503
          jsl   $e10000
          rtl
-
 
 :message str   'Open GS Lzb Anim:'
 
@@ -557,52 +620,56 @@ p:where  adrl  $1c000     ;about 108k into file
 
 
 
-PlayAnimation
-		rts
+PlayAnimation mx %00
 		
 		; ha, this has to parse the headers
 		; before it can play the animation
 
 		; copy player to the Direct Page
 		
-	    lda #127  ; player is really only about 96 bytes
-		ldx #player
-		phd
-		ply
-		sty :play+1
-		sty :init+1
+	lda #127  ; player is less than 128 bytes
+	ldx #player
+	phd
+	ply
+	sty :play+1
+	sty :init+1
 		
-		mvn ^player,$00	
+	mvn ^player,$00	
 
-		phk
-		plb
+	phk
+	plb
 		
-		; Pointer to the INITial Frame Data
-		lda #28    ; Header of file + Header of INIT Frame
-		ldx p:rbuf+2
+	; Pointer to the INITial Frame Data
+        lda <banks_data
+        and #$00FF
+        sta $FE
+
+	ldx #28    ; Header of file + Header of INIT Frame
+
+        ; X = Low
+        ; A = High
 		
 :init	jsl $000000 ; for the first frame
-		
+
 		; load up a pointer to data
 :loop
-	    lda  p:rbuf
-		sta  $F0
-		lda  p:rbuf+2
-		sta  $F2
+	stz  $FC
 		
-	    ldy  #24
-		lda [$F0],y
-		clc
-		adc #20
+	ldy  #24
+	lda [$FC],y
+	clc
+	adc #28  ; 20 byte header + 8 bytes skip into the ANIM Block
+        tax
 		 
-        ;lda p:rbuf
-        ldx p:rbuf+2
+        lda $FE
 
-		; play the animation
+	; play the animation
+        ; X = Low
+        ; A = High
 			
 :play   jsl $000000
 
-		bra :loop
+	bra :loop
 
         rts
 
@@ -618,3 +685,47 @@ DoClose
 text
          str   "Written By:  Jason Andersen and Steven Chiang"
 
+********************************************************************************
+*
+* Append a Bank to the list
+*
+AddBank mx %00
+        ldx <banks_count
+        sta <banks_data,x
+        inx
+        stx <banks_count
+        rts
+
+********************************************************************************
+*
+* Free Memory, and Clear Bank List
+*
+FreeBanks mx %00
+
+]loop
+        ldx <banks_count
+        dex
+        bmi :done
+        stx <banks_count
+
+        ldy #0
+        phy     ; space for result
+        phy
+
+        lda <banks_data,x
+        and #$00FF
+        phy     ; memory address high
+        phy     ; memory address low
+
+        ldx #$1A02 ; FindHandle
+        jsl tool
+
+        ldx #$1002 ; DisposeHandle
+        jsl tool
+
+        bra ]loop
+
+:done
+        rts
+
+        rts
