@@ -410,6 +410,49 @@ Cmds
 *  Main code goes here...
 *
 
+DoInvalidFile
+         ~NoteAlert #InvalidTemplate;#0
+         pla
+         rts
+
+InvalidTemplate
+         dw    62,128,151,512 ;position
+         dw    1
+         dfb   128,128,128,128
+         adrl  :Item1
+         adrl  :Item2
+         adrl  :Item3
+         adrl  0
+
+:Item3   da    3
+         dw    33,76,43,291 ;rect
+         da    StatTextItem+ItemDisable
+         adrl  :Item3Txt
+         da    0
+         da    0
+         adrl  0
+:Item3Txt
+         str   'This file seems invalid.'
+
+:Item2   dw    2
+         dw    13,122,22,251 ;rect
+         da    StatTextItem+ItemDisable
+         adrl  :Item2Txt
+         da    0
+         da    0
+         adrl  0
+:Item2Txt str  'Cannot play!!'
+
+:Item1   da    1
+         dw    66,272,78,350 ;rect
+         da    ButtonItem
+         adrl  :Item1Txt
+         da    0
+         da    1
+         adrl  0
+:Item1Txt str  ' Ok '
+
+
 
 DoAbout
          ~NoteAlert #AboutTemplate;#0
@@ -597,8 +640,8 @@ DoOpen
 
 :filter  dw    0          ; (count 0/no filter), set to 1 for only show s16 files
 
-*         dw    1          ; (count 1) Show only s16 files
-*         dw    0,$b3,0,0  ;flags, filetype, auxtype
+;         dw    1          ; (count 1) Show only s16 files
+;         dw    0,$b3,0,0  ;flags, filetype, auxtype
 
 p:close
 p:open   dw    1          ;ref number
@@ -614,13 +657,72 @@ p:rsize  adrl  $10000     ;number requested  64k
 p:get_eof dw 0     ; reference number
 p:eof     adrl 0   ; end of file
 
-p:setmark
-         dw    0          ;ref number
-p:where  adrl  $1c000     ;about 108k into file
 
+*
+* Hold a backup of the system palette
+*
+scbs_and_palette
+        ds 768
 
+pData = $FC
 
 PlayAnimation mx %00
+
+        ; First verify that the file, looks like what it should be
+        stz <pData
+        lda <banks_data
+        and #$00FF
+        sta <pData+2
+
+        ; pData now points to the first 64KB of the file
+
+        ; Check 'GSLA'
+        lda [pData]
+        cmp #'GS'
+        bne :BadHeader
+
+        ldy #2
+        lda [pData],y
+        cmp #'LA'
+        bne :BadHeader
+        iny
+        iny
+
+        ; Check Size Field for Sanity
+        lda [pData],y
+        cmp p:eof
+        bne :BadSize
+        iny
+        iny
+
+        lda [pData],y
+        cmp p:eof+2
+        bne :BadSize
+
+        ; Probably check more things
+
+        brl :good_header
+
+:BadSize
+:BadHeader
+        ; Notif
+
+        jsr DoInvalidFile
+
+        jsr FreeBanks
+        rts
+
+:good_header
+
+        ; The mouse cursor doesn't play nice with what we're doing
+        _HideCursor
+
+        lda #$2FF
+        ldx #$9D00 ; $E19D00, the SBCS
+        ldy #<scbs_and_palette ; Temp buffer
+        mvn $E1,^scbs_and_palette
+        ; this happens to end with the bank happy
+
 		
 		; ha, this has to parse the headers
 		; before it can play the animation
@@ -669,7 +771,31 @@ PlayAnimation mx %00
 			
 :play   jsl $000000
 
-	bra :loop
+        ;
+        ; Let the Memory go
+        ;
+        jsr FreeBanks
+
+        lda #$2FF
+        ldx #<scbs_and_palette ; Temp buffer
+        ldy #$9D00 ; $E19D00, the SBCS
+        mvn ^scbs_and_palette,$01
+        phk
+        plb
+
+
+        ;
+        ; Redraw the Screen
+        ;
+        Tool $2a0f ; DrawMenuBar
+        PushLong #0
+        Tool $390E ; RefreshDesktop
+
+        ;
+        ; Show the Mouse
+        ;
+        _ShowCursor
+
 
         rts
 

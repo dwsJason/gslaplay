@@ -432,3 +432,12 @@ test     mac
          stal  $e1c034
          rep   #$30
          eom
+
+_HideCursor mac
+ Tool $9004
+ eom
+
+_ShowCursor mac
+ Tool $9104 
+ eom
+
