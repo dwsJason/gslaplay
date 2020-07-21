@@ -71,6 +71,8 @@ SetRes   sep   $30        ; 8-bit mode
          ldx   #$1F02
          jsl   tool       ; CompactMem
 ;-------------------------------------------------------------------------------
+; I'm pretty sure one of the tools is allocating this out from under me
+;
 ;         PushLong  #0                   ; Ask Shadowing Screen ($8000 bytes from $01/2000)
 ;         PushLong  #$8000
 ;         PushWord  ProgID
@@ -412,7 +414,7 @@ AboutTemplate
          da    0
          adrl  0
 :Item3Txt
-         str   '(C)2020 DreamWorld Software'
+         str   '(C) 2020 DreamWorld Software'
 
 :Item2   dw    2
          dw    13,122,22,251 ;rect
@@ -551,11 +553,29 @@ DoSave
 
 PlayAnimation
 
+		; ha, this has to parse the headers
+		; before it can play the animation
 
+		; copy player to the Direct Page
+		
+	    lda #127  ; player is really only about 96 bytes
+		ldx #player
+		phd
+		ply
+		sty :play+1
+		
+		mvn ^player,$00	
+
+		phk
+		plb
+		
+		; load up a pointer to data
 
         lda p:rbuf
         ldx p:rbuf+2
 
+		; play the animation
+			
 :play   jsl $000000
 
         rts
