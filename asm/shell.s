@@ -167,7 +167,7 @@ DoMenu
 
          _InitCursor
 
-         JSR    DoAbout    ; Show this to the user before we get going...
+         ;JSR    DoAbout    ; Show this to the user before we get going...
          JSR    DoOpen   
 
 *  Command Processor
@@ -304,7 +304,7 @@ getmem   ent
 :sizelo  pea   #$ffff     ; Size in Bytes of Block 64k
          lda   ProgID
          pha
-         pea   #%1100000000011100 ; Attributes
+gm_atr   pea   #%1100000000011100 ; Attributes
          lda   #0
          pha
          pha              ; Ptr to where Block is to begin
@@ -491,22 +491,30 @@ DoOpen
 * I've decided that using Tools to spawn a dialog with a loading meter
 * is actually more work (mentally), than just stomping on the frame buffer
 *
+		 
+; need to allocate each bank separate, to guarantee
+; the alignment for the player
+; perhaps loop through, and store a list of allocated banks
+; starting at $80 in the DP, so DP,x addressing can get at
+; them in the player		 
+		 
+		 
          lda p:eof
          ldx p:eof+2
          jsr getmem
          bcs :err_close
 
-         jsl dereference
-         sta p:rbuf
-         stx p:rbuf+2
+;         jsl dereference
+;         sta p:rbuf
+;         stx p:rbuf+2
 
-         lda p:eof
-         ldx p:eof+2
-         sta p:rsize
-         stx p:rsize+2
+;         lda p:eof
+;         ldx p:eof+2
+;         sta p:rsize
+;         stx p:rsize+2
 
-         _Read p:read
-         bcs   :err_close
+;         _Read p:read
+;         bcs   :err_close
 
          _Close p:close
          bcs   :trouble
@@ -548,11 +556,10 @@ p:setmark
 p:where  adrl  $1c000     ;about 108k into file
 
 
-DoSave
-         rts
 
 PlayAnimation
-
+		rts
+		
 		; ha, this has to parse the headers
 		; before it can play the animation
 
@@ -563,20 +570,39 @@ PlayAnimation
 		phd
 		ply
 		sty :play+1
+		sty :init+1
 		
 		mvn ^player,$00	
 
 		phk
 		plb
 		
+		; Pointer to the INITial Frame Data
+		lda #28    ; Header of file + Header of INIT Frame
+		ldx p:rbuf+2
+		
+:init	jsl $000000 ; for the first frame
+		
 		; load up a pointer to data
-
-        lda p:rbuf
+:loop
+	    lda  p:rbuf
+		sta  $F0
+		lda  p:rbuf+2
+		sta  $F2
+		
+	    ldy  #24
+		lda [$F0],y
+		clc
+		adc #20
+		 
+        ;lda p:rbuf
         ldx p:rbuf+2
 
 		; play the animation
 			
 :play   jsl $000000
+
+		bra :loop
 
         rts
 
