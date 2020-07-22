@@ -6,6 +6,8 @@
 *
 *  Updated for Merlin 32  07/11/2020
 *
+*  play.s contains the interesting bits of the code
+*
 
 *   OA-F  "damnmenu" to find menu definitions
 *
@@ -32,9 +34,6 @@ vidmode  =     $8080      ;Video mode for QD II (320) ($8000)
 
 tool     equ   $e10000
 
-iobuff   equ   $80
-
-textlength equ 38         ;max length of text
 
 startup  ent
          mx %00
@@ -70,17 +69,6 @@ SetRes   sep   $30        ; 8-bit mode
 ;
          stz <banks_count
 
-
-
-         PushLong #0      ;result space
-         lda   ProgID     ;user ID
-         pha
-         pea   #$0        ;reference by handle
-         PushLong #startref
-         ldx   #$1801     ;startuptools
-         jsl   $e10000
-         PullLong stref
-
 ;-------------------------------------------------------------------------------
          PushLong  #0                   ; Compact Memory
          PushLong  #$8fffff
@@ -93,6 +81,21 @@ SetRes   sep   $30        ; 8-bit mode
          jsl   tool       ; DisposeHandle
          ldx   #$1F02
          jsl   tool       ; CompactMem
+
+;-------------------------------------------------------------------------------
+;
+; Startup Way too many Tools
+;
+
+         PushLong #0      ;result space
+         lda   ProgID     ;user ID
+         pha
+         pea   #$0        ;reference by handle
+         PushLong #startref
+         ldx   #$1801     ;startuptools
+         jsl   $e10000
+         PullLong stref
+
 ;-------------------------------------------------------------------------------
 ; I'm pretty sure one of the tools is allocating this out from under me
 ;
@@ -140,23 +143,20 @@ backhandle dw  0,0
 *
 
 DoMenu
-         ldx   #$0001
-         lda   #$0000
-         jsr   getmem
-         bcc   :ov3
-         brl   ShutDown
-:ov3                      ;handle in a and x
-         jsl   dereference
-
-         sta   p:rbuf     ; set up Disk I/O buffer
-         sta   iobuff
-         txa
-         sta   p:rbuf+2
-         sta   iobuff+2
-
-         ; A contains bank address to add
-         jsr   AddBank
-
+;         ldx   #$0001
+;         lda   #$0000
+;         jsr   getmem
+;         bcc   :ov3
+;         brl   ShutDown
+;:ov3                      ;handle in a and x
+;         jsl   dereference
+;
+;         sta   p:rbuf     ; set up Disk I/O buffer
+;         txa
+;         sta   p:rbuf+2
+;
+;         ; A contains bank address to add
+;         jsr   AddBank
 
 * PushLong #0
 * PushPtr ExampleM
@@ -193,7 +193,6 @@ DoMenu
 
          _InitCursor
 
-         ;JSR    DoAbout    ; Show this to the user before we get going...
          JSR    DoOpen   
 
 *  Command Processor
@@ -222,6 +221,7 @@ GetEvent
          sbc   #250       ;Reduce to 0 and
          asl              ;  double to find
          tax              ;  index into table.
+
          jsr   (Cmds,X)
 
          PushWord #0
@@ -410,7 +410,7 @@ Cmds
 
          da    DoAbout    ;This starts OUR items. (#256)
 
-         da    DoOpen
+         da    DoOpenFromMenu
          da    ShutDown
 
 *
@@ -503,6 +503,7 @@ AboutTemplate
          adrl  0
 :Item1Txt str  ' Ok '
 
+DoOpenFromMenu
 DoOpen
          pea   #30        ;x of upper left corner
          pea   #40        ;y of upper left corner
@@ -754,7 +755,7 @@ PlayAnimation mx %00
 	; Pointer to the INITial Frame Data
         lda <banks_data
         and #$00FF
-        sta $FE
+        sta <pData+2
 
 	ldx #28    ; Header of file + Header of INIT Frame
 
@@ -796,7 +797,7 @@ PlayAnimation mx %00
 	; play the animation
         ; X = Low
         ; A = High
-			
+        			
 :play   jsl $000000
 
         lda LoopAnimationFlag
@@ -819,6 +820,7 @@ PlayAnimation mx %00
         ; Redraw the Screen
         ;
         Tool $2a0f ; DrawMenuBar
+
         PushLong #0
         Tool $390E ; RefreshDesktop
 
@@ -834,13 +836,13 @@ EndOfAnimFrame ent
         plb
 :check_key
         pha
-        PushWord #$000A  ; only mousedown, or keydown
-        PushPtr TaskRecord
+        PushWord #$000A      ; only mousedown, or keydown
+        PushPtr :TaskRecord  ; NOTE: using our own local record
         _TaskMaster
         pla
         beq :no_action
 
-        lda tType
+        lda :tType
         cmp #1
         beq :mousedown
         cmp #3
@@ -870,6 +872,17 @@ EndOfAnimFrame ent
         ; Animation has been interrupted
         sec
         rtl
+;
+; We don't want to corrupt the original TaskRecord
+;
+:TaskRecord
+:tType    ds    2          ;Event code
+:tMessage ds    4          ;Type of Event
+:tWhen    ds    4          ;Time since startup
+:tWhere   ds    4          ;Mouse Location
+:tMod     ds    2          ;Event modifier
+:TaskData ds    4          ;Taskmaster Data
+:TaskMask adrl  $00001FFF  ;Taskmaster Handle All
 
 DoUndo
 DoCut
@@ -925,4 +938,4 @@ FreeBanks mx %00
 :done
         rts
 
-        rts
+********************************************************************************
