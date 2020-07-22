@@ -3,6 +3,13 @@ Apple IIgs GSLA Player
 
 Example of a GS LZB Animation Player
 
+Inspired by Deluxe Animation Run/Skip/Dump, and FLI/FLC with similar properties
+
+I replace the "Run" with a dictionary/frame buffer copy from the existing
+buffer to the existing buffer.   This is able to runlength not just a single
+byte, but a repeating pattern of arbitrary length.
+
+--------------------------------------------------------------------------------
 New Apple IIgs Animation file format
 GS LZ Byte Compressed Animation
 Why?  When there are so many image formats would we need another one?   It’s
@@ -10,10 +17,9 @@ because $C2/Paintworks animation format is just terribly inefficient.
 
 Care is taken in the encoder, to make sure the 65816 does not have to cross bank
 boundaries during any copy.  This is so we can use the MVN instruction, and so
-we can reduce the number of bank checks in the code.   Some bank checks will be
-required, because we are dealing with data sizes that exceed 64KB at times.
+we can reduce the number of bank checks in the code.
 
-We will have an opcode, that says “source data bank has changed”
+We have an opcode, that says “source data bank has changed”
 
 Goals include a good balance between file size, and playback performance
 (since one often makes a trade off with the other).
@@ -120,13 +126,13 @@ Command Word, encoded low-high, what the bits mean:
 
 // xxx_xxxx_xxxx_xxx is the number of bytes 1-16384 to follow (0 == 1 byte)
 
-%0xxx_xxxx_xxxx_xxx0 - Copy Bytes - straight copy bytes
-%1xxx_xxxx_xxxx_xxx1 - Skip Bytes - skip bytes / move the cursor
-%1xxx_xxxx_xxxx_xxx0 - Dictionary Copy Bytes from  frame buffer to frame buffer
-
-%0000_0000_0000_0001- Source Skip -> Source pointer skips to next bank of data
-%0000_0000_0000_0011- End of Frame - end of frame
-%0000_0000_0000_0111- End of Animation / End of File / no more frames
+* %0xxx_xxxx_xxxx_xxx1 - Copy Bytes - straight copy bytes
+* %1xxx_xxxx_xxxx_xxx1 - Skip Bytes - skip bytes / move the cursor
+* %1xxx_xxxx_xxxx_xxx0 - Dictionary Copy Bytes from  frame buffer to frame buffer
+* 
+* %0000_0000_0000_0000- Source Skip -> Source pointer skips to next bank of data
+* %0000_0000_0000_0010- End of Frame - end of frame
+* %0000_0000_0000_0110- End of Animation / End of File / no more frames
 
 // other remaining codes, are reserved for future expansion
 
