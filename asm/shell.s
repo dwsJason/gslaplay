@@ -37,6 +37,13 @@ iobuff   equ   $80
 textlength equ 38         ;max length of text
 
 startup  ent
+         mx %00
+
+         ; in theory here, our ProgID is already in A
+         ; and our DP is already in D
+         ;pha
+         ;phd
+
          phk
          plb              ;make the program bank = data bank
 
@@ -199,7 +206,7 @@ DoMenu
 
 GetEvent
          pha
-         PushWord #$FFFF
+         PushWord #$FFFF   ; all the things
          PushPtr TaskRecord
          _TaskMaster
          pla
@@ -664,6 +671,9 @@ p:eof     adrl 0   ; end of file
 scbs_and_palette
         ds 768
 
+LoopAnimationFlag dw 0 ; Set to 1 while animation is looping
+LastTickCount adrl 0
+
 pData = $FC
 
 PlayAnimation mx %00
@@ -753,23 +763,44 @@ PlayAnimation mx %00
 		
 :init	jsl $000000 ; for the first frame
 
-		; load up a pointer to data
+
+
+        ; Tell make sure looping is enabled
+
+        lda #1
+        sta LoopAnimationFlag
+
+        ; Initialize Tick
+
+        pha
+        pha
+        Tool $1006  ; TickCount
+        pla     
+        plx
+
+        sta LastTickCount
+        stx LastTickCount+2
+
+        ; load up a pointer to data
 :loop
-	stz  $FC
+	stz  <pData
 		
 	ldy  #24
-	lda [$FC],y
+	lda [pData],y
 	clc
 	adc #28  ; 20 byte header + 8 bytes skip into the ANIM Block
         tax
 		 
-        lda $FE
+        lda pData+2
 
 	; play the animation
         ; X = Low
         ; A = High
 			
 :play   jsl $000000
+
+        lda LoopAnimationFlag
+        bne :loop
 
         ;
         ; Let the Memory go
@@ -796,9 +827,49 @@ PlayAnimation mx %00
         ;
         _ShowCursor
 
-
         rts
 
+EndOfAnimFrame ent
+        phk
+        plb
+:check_key
+        pha
+        PushWord #$000A  ; only mousedown, or keydown
+        PushPtr TaskRecord
+        _TaskMaster
+        pla
+        beq :no_action
+
+        lda tType
+        cmp #1
+        beq :mousedown
+        cmp #3
+        beq :keydown
+
+:no_action
+        ; We still need to make sure 1 tick has elapsed
+        pha
+        pha
+        Tool $1006  ; TickCount
+        pla     
+        plx
+
+        cmp LastTickCount
+        beq :check_key
+        
+        sta LastTickCount 
+
+        clc  ; keep playing the animation
+        rtl
+:mousedown
+:keydown
+:stop
+        ; Tell the Animation Play to not loop
+        stz LoopAnimationFlag
+        ; Signal to the Anim Player, that we're done playing
+        ; Animation has been interrupted
+        sec
+        rtl
 
 DoUndo
 DoCut

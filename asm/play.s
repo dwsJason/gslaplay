@@ -41,8 +41,9 @@
 *---  DP may be anywhere in bank 0, but make sure it's PAGE aligned
 *---- for performance reasons
 
-;        rel
         dsk play.l
+
+        ext EndOfAnimFrame
 
 ;
 ; Defines, for the list of allocated memory banks
@@ -74,18 +75,19 @@ extended_command
         lsr
         bcs :end_of_file
 
-*        ; end of frame
+        ; end of frame
+        ; check elapsed ticks (need at least 1)
+        ; For now just inline vsync (preferable to check the number of
+        ; if jiffy that have elapsed, because if the animation uses more than
+        ; roughly 10% of the screen we don't want to sync here
+        phx
+
+        jsl EndOfAnimFrame
+
+        plx
+        bcs :end_of_file
+
         ldy #$2000
-*        ; check elapsed ticks (need at least 1)
-*        ; For now just inline vsync (preferable to check the number of
-*        ; if jiffy that have elapsed, because if the animation uses more than
-*        ; roughly 10% of the screen we don't want to sync here
-*        lda <frames
-*        inc
-*        sta <frames
-*        cmp #2
-*        bge :end_of_file
-*
         bra read_opcode
 
 :end_of_file
