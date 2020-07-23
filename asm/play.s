@@ -145,14 +145,14 @@ dictionary_copy
         lsr
         bcs cursor_skip
 
-        sta <temp
+        sta <copylen+1
 
         stx <dictionary_offset+1
 dictionary_offset
         ldal $000000
         tax
 
-        lda <temp
+copylen lda #$0000
         ; dictionary copy
         mvn $01,$01
 
@@ -170,5 +170,4 @@ skip_amount
         bra read_opcode
 
 banks_index dw 0
-temp    dw 0
 
