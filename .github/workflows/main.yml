@@ -11,7 +11,7 @@ jobs:
       uses: digarok/install-merlin32-action@v0.1.3
     - name: Assemble Source 
       run: |
-        merlin32 -V .\macros\ asm\link.s
+        merlin32 -V ./macros/ asm/link.s
    
     - name: Install Cadius
       uses: digarok/install-cadius-action@v0.1.3
