@@ -10,7 +10,7 @@ New Apple IIgs Animation file format ... GS LZ Byte Compressed Animation
 - Inspired by Deluxe Animation Run/Skip/Dump, and FLI/FLC with similar properties.
 - I replace the "Run" with a dictionary/frame buffer copy from the existing buffer to the existing buffer.   This is able to runlength not just a single byte, but a repeating pattern of arbitrary length.
 - Care is taken in the encoder to make sure the 65816 does not have to cross bank boundaries during any copy.  This is so we can use the MVN instruction and also reduce the number of bank checks in the code.
--- (We have an opcode to indicate "source data bank has changed".)
+  - (We have an opcode to indicate "source data bank has changed".)
 - Goals include a good balance between file size, and playback performance (since one often makes a trade off with the other).
 
 -----
@@ -41,14 +41,13 @@ File Offset | Data                   |  Comment
 0xC			| {Height} `0x00C8`      | (16-bit word) Height in bytes, typically 200 == 0x00C8
 0xE         | {FrameLength} `0x8000` | (16-bit word) Frame size in bytes, since a "Frame" may contain more than just the width * height, worth of pixels. For now this is `$8000`, or 32768
 0x10        | {FrameCount}           | (32-bit long) Frame Count (total, including ring frame)
+|           | _HEADER END HERE_      | 
 0x14        | _First data chunk...._ | .... 
 ...         | _Next data chunk...._  | .... until end of file
 
 
 After the header comes AIFF style chunks of data starting at file offset `0x14`, basically a 4-byte chunk name, followed by a 4-byte length (inclusive of the chunk header). The idea is that you can skip chunks you don't understand.
 
-File Offset:
-0x14            First Chunk  (followed by more Chunks, until end of file)
 
 ### Data Chunk Definitions
 ##### INIT
