@@ -33,12 +33,12 @@ File Offset | Data                   |  Comment
 4           | {FileLength}           | (32-bit long) File length in bytes
 8           | {VL}                   | Version Low - File format Minor version, `0` for now
 9           | {VH}                   | Version High - Bits:  ```%RVVV_VVVV_VVVV_VVVV```
-|			      |                        |  `V` is Major version #, `0` for now
-|			      |                        |  `R` is the MSB,  `R = 0` no ring frame
-|			      |                        |  `R = 1`, there is a ring frame
-|			      |		                     | _Ring Frame_ is a frame that will delta from the last frame of the animation back to the first for smoother looping.  If a ring frame exists, it's also in the frame count.
-0xA			    | {Width}  `0x00A0`      | (16-bit word) Width in bytes, typically 320/2 == 160 == 0x00A0
-0xC			    | {Height} `0x00C8`      | (16-bit word) Height in bytes, typically 200 == 0x00C8
+|           |                        |  `V` is Major version #, `0` for now
+|           |                        |  `R` is the MSB,  `R = 0` no ring frame
+|           |                        |  `R = 1`, there is a ring frame
+|           |                        | _Ring Frame_ is a frame that will delta from the last frame of the animation back to the first for smoother looping.  If a ring frame exists, it's also in the frame count.
+0xA         | {Width}  `0x00A0`      | (16-bit word) Width in bytes, typically 320/2 == 160 == 0x00A0
+0xC         | {Height} `0x00C8`      | (16-bit word) Height in bytes, typically 200 == 0x00C8
 0xE         | {FrameLength} `0x8000` | (16-bit word) Frame size in bytes, since a "Frame" may contain more than just the width * height, worth of pixels. For now this is `$8000`, or 32768
 0x10        | {FrameCount}           | (32-bit long) Frame Count (total, including ring frame)
 |           | _HEADER END HERE_      | 
