@@ -1,0 +1,6 @@
+Regular dip switch settings (Snasm 1)
+-------------------------------------
+
+A - all down except 5,6,7
+B - 1,2,3 up, all rest down
+

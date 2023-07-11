@@ -1,0 +1,34 @@
+SNRUN temporary documentation.
+
+SNRUN is used to send a cpe file to a target machine and then start execution.
+It can cope with cpe files produced by all versions of the assemblers and
+linkers and copes with all embeded register and workspace information.
+
+To get command line help type 'snrun ?'.
+
+To send myfile.cpe to target 7 just type -
+snrun myfile
+
+To send myfile.cpe to target 6 but not start executing type -
+snrun /h /t6 myfile
+
+The following can be used in your .prj file if you want to work via a cpe
+file.
+
+	...
+
+demoag.cpe;	demoag.68k
+	snasm68k $! demoag.68k,demoag.cpe,demoag.sym
+!ifdef(debugstr)
+	snbug68k /edemoag.cpe demoag.sym
+!else
+	snrun demoag
+!endif
+
+	...
+
+It returns error codes but I don't have a list of them yet!
+
+Ian Oliver
+
+

@@ -1,0 +1,93 @@
+64K address space.
+0000-00FF Page zero
+0100-01ff Page one (used for stack as on 6502)
+
+Regs
+A, X, Y PSW, (program status word), PC, SP
+
+A is 8 bit. When using 16 bit instructions in is paired with Y, with Y
+being the high order byte.
+
+Boolean bit operations can be performed in the memory range 0000-1fff
+
+Format of PSW.
+NVP-H-ZC Negative, Overflow, Direct page, Half carry, Zero, Carry
+The direct page flag determines if DP accesses are to page 0 or page 1.
+
+Addressing modes
+----------------
+
+Mode		Desc.			Bytes
+dp		Direct page		2
+dp+X		X-indexed direct page	2
+dp+Y		Y-indexed direct page	2
+(X)		indirect		1
+(X)+		indirect auto-inc	1
+dp.dp		Direct page to dp	3
+(X),(Y)		Indirect page to IP	1
+dp,#imm		Immediate data to dp	3
+dp.bit		Direct page bit		2
+dp.bit.rel	Direct page bit rel	3
+mem.bit		Absolute bit		3
+!abs		absolute		3
+!abs+X		absolute X		3
+!abs+Y		absolute Y		3
+[dp+X]		X-indexed indirect	2
+[dp]+Y		Indirect Y-indexed	2
+
+
+Latest Changes to snasmspc
+--------------------------
+
+All instructions are now implemented including bbs, set1, etc.
+
+
+
+The character between the memory location and the bit number in and1, etc.
+is now '.' rather than ',', eg.
+
+   and1  c,$23.2
+   set1  $30.1
+
+If the memory address ends in a name it will have to be bracketed to avoid
+the bit number being treated as part of the name, eg.
+
+   and1 c,(fred).2
+
+
+
+
+
+There is an assume statement for the direct page selection flag :
+
+     assume  dp:0  -- page 0 is direct page
+     assume  dp:1  -- page 1 is direct page
+
+initially page 0 will be assumed to be direct page.  Optimisation to
+direct page addressing will check that the operand is in the assumed
+page.
+
+
+
+Absolute address mode can be forced by using ! as an operand prefix, eg.
+
+    mov  !$30+y,a
+    jmp  !fred
+    jmp  [!jtab+x]
+
+Direct page addressing can be forced by using < as an operand prefix, eg.
+
+    mov <fred,a
+
+The address expression will be calculated by subtracting the currently
+assumed direct page bank number from the operand value.  The result of
+this must be in the range 0-255.
+
+
+
+The ` characters are used to enclose macro parameters (as in 65816), eg.
+
+        callmacro  `fred < jim`
+
+
+

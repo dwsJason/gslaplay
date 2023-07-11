@@ -1,0 +1,39 @@
+
+B0	group	org($08000)
+Break	group	org($0FFE6)
+
+	org	0
+
+	section	s1,b0
+
+	regs	pc=*,p=%00000100,s=$1ff,d=$5678,db=$00
+
+	mx	%11
+
+TrapEntry	equ	$708008
+BreakEntry	equ	$70800B
+
+	assume	db:$00
+
+	rep	%00110000
+
+MainLoop	jsl	TrapEntry	; service debugger
+
+	lda	#100
+	jsr	Delay
+	bra	MainLoop
+
+Delay	module
+	dea
+	bne	Delay
+	rts
+	modend
+
+DoBrk	jmp	>BreakEntry
+
+	section	s3,Break
+	dw	DoBRK
+
+
+
+

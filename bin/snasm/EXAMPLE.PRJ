@@ -1,0 +1,15 @@
+[snmake]
+t7:;	example.658
+	snasm658 $! example.658,t7:,example.sym
+
+!ifdef(DebugStr)
+	snbug658 example.sym
+!endif	
+
+[eval]
+	snbug658 /v$$$ example.sym
+
+[debug]
+	snbug658 example.sym
+
+

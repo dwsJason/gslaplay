@@ -1,0 +1,83 @@
+Contents of the distribution disk:
+==================================
+
+\macros\snasm.cb          |
+\macros\snasm1.cb	  |Set of brief macros to give integrated use of snasm
+\macros\snasm.cm	  |
+\macros\snasm1.cm	  |
+\macros\snmk0.mnu	  brief menu file
+\snasm\scsilink.exe       TSR required to connect to target machines
+\snasm\snasm658.exe       Snasm 65186 Macro Assembler
+\snasm\snbug658.exe       Snasm 65186 Remote Debugger
+\snasm\snlib.exe	  Snasm Library Manager
+\snasm\snlink.exe         Snasm Linker
+\snasm\ltu.exe            Snasm Link Test Utility
+\snasm\snmake.exe	  Snasm make utility
+\snasm\sncopy.exe	  Snasm copy utility
+\snasm\snbug658.cf7	  Snbug658 config file
+\install.exe		  A utility to install the SNASM system		  
+
+
+
+Notes
+=====
+
+1. The SNASM directory contains a utility (LTU) for testing the SCSI
+link. It has built-in help using LTU ?
+
+2. The brief editor macros that interface SNASM to the editor have 
+been revised to work with the Cross Products make utility SnMake, and 
+hence  provide a better working environment for the SNASM user. In 
+practical terms this means that within brief the dialogue-box interface 
+to SNASM has been completely scrapped and now relies on using SnMake 
+and its associated 'project files' for the setting up and executing of 
+external commands. Whilst this involves slightly more work in initial 
+setting-up it offers longer-term time savings and and much more 
+flexibility. Please see the SNASM manual for further details on the make 
+utility and its operation.
+ 
+3. Version 1.50 of the Brief macros have a new feature not covered in the 
+manual. This is the 'Assemble this file' menu item - keyboard binding Ctrl-A.
+This macro allows the user to assemble the file in the current buffer without
+using a project file and SnMake. Upon selection the macro creates a window on
+the editor screen containing something similar to the following :
+
+	Snasm658 /i/d filename
+
+The /i switch is allways set - this makes Snasm create an information window 
+on the editor screen as it assembles.
+
+The /d switch appears depending on the state of the Debug variable as set 
+from the SNASM menu.
+
+The user can now type in the remainder of the command line they wish to issue
+and this will be restored when the macro is used later.   
+
+ 
+4. Version 1.51 of the Brief macros now pass control of error reporting on
+to Brief's built in error handling if the SNASM project macros have not been
+used to do an assembly\compile. This allows fuller use of Briefs built in 
+assembler\compiler support.
+
+5. Version 1.24 of SnMake now has a facility to swap itself out of memory if 
+the user is experiencing memory shortages during an assembly. The syntax is
+follows the normal project file command format with an addition as follows :
+
+	-mxxx snasm658 $! test1.658,t7:
+
+	where xxx is the memory threshold (in K) at which the make utility 
+	should swap out. Thus -m500 will force the make utility to swap 
+	itself out of memory if less than 500k of memory is available. -m640
+	will always cause a swap.
+
+The swapping is done to extended memory by default, if none is available 
+expanded memory is looked for. Failure to find either extended or expanded 
+memory will force SnMake to swap itself to disk; by default the current 
+directory is used. This can be altered, for example to use a ram disk, in the
+following manner :
+
+swapdir=e:
+
+which will force the make utility to swap to e: if it can find no available 
+'high' memory.NOTE - swapdir should be specified only once in a given 
+project file.

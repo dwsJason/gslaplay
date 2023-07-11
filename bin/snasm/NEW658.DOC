@@ -1,0 +1,729 @@
+This file contains engineering notes on the versions of SNASM on this disk.
+The notes on older versions are also included for people who may have missed
+a release. Please note that we don't usually supply the latest version of
+the software with new systems so you may want to update even if you have
+only just get your system.
+
+This information is incorporated into the manual each time we do a reprint
+so much of this may already be in your current manual.
+
+
+*****************************************************************************
+
+SNASM658 1.24
+SNBUG658 1.63
+SNLINK   1.23
+SNLIB    1.10
+SCSILINK 1.5
+
+
+.	a bug that made snasm658 fail to recognise labels with direct page
+	optimisation switched on has been fixed.
+
+
+*****************************************************************************
+
+SNASM658 1.23
+SNBUG658 1.63
+SNLINK   1.23
+SNLIB    1.10
+SCSILINK 1.5
+
+
+.	a bug that prevented data being defined outside of any section has
+	been fixed in snasm658
+
+.	The linker could only output a maximum of 13 files when using
+	the group 'file' option. This limit has now been eradicated.
+
+
+*****************************************************************************
+
+SNASM658 1.22
+SNBUG658 1.63
+SNLINK   1.21
+SNLIB    1.10
+SCSILINK 1.5
+
+.	a bug in snasm658's memory allocation that caused a crash at the 
+	start of pass two in low memory conditions if more that 300K of 
+	code was being assembled has been fixed.
+
+.	a bug in snasm658 that could cause the linker to run wild if data
+	space was allocated outside any section/group has been fixed.
+
+
+*****************************************************************************
+
+SNASM658 1.21
+SNBUG658 1.63
+SNLINK   1.21
+SNLIB    1.10
+SCSILINK 1.5
+
+
+.	a bug in snlib that left XDEF'd symbols in object files produced 
+	by snasm658 'unseen' has been fixed. 
+
+.	a number of small improvments have been made to the file window and
+	file handling in snbug658. The only one noticable to the user is that
+	the full pathname of the file on display is now shown along the top
+	of the window.	
+
+*****************************************************************************
+
+SNASM658 1.21
+SNBUG658 1.57
+SNLINK   1.21
+SNLIB    1.09
+SCSILINK 1.5
+
+.	groupend() and sectend() functions have been implemented in snasm658.
+	These give the end address of a group or section respectively. These 
+	addresses are not evaluated until link time thus
+
+	#groupend(g1)-grouporg(g1)
+
+	gives the final size of group g1
+
+
+*****************************************************************************
+
+SNASM658 1.20
+SNBUG658 1.57
+SNLINK   1.21
+SNLIB    1.09
+SCSILINK 1.5
+
+. 	Bug that prevented macro expansion inside short macros has been
+	fixed
+
+
+*****************************************************************************
+
+SNASM658 1.19
+SNBUG658 1.57
+SNLINK   1.21
+SNLIB    1.09
+SCSILINK 1.5
+
+. 	Bug that crashed PC whilst stepping in the debugger has been fixed.
+
+
+*****************************************************************************
+
+SNASM658 1.19
+SNBUG658 1.53
+SNLINK   1.21
+SNLIB    1.09
+SCSILINK 1.5
+
+.	Fixed __mx in assembler
+
+.	Debugger now displays sizes of accumulator and index registers
+
+.	Various fixes to assembler and debugger
+
+*****************************************************************************
+SNASM658 1.18
+SNBUG658 1.47
+SNLINK   1.21
+SNLIB    1.09
+SCSILINK 1.5
+
+.	The assembler and linker now utilise all free memory on the 
+	system, including UMB's on DOS 5+ and up to 64k of EMS if 
+	available.
+
+.	The functions  sectsize() and groupsize(); which return the
+	current size of a section or group respectively, have been 
+	added. They are evaluated immediately and so reflect the 
+	current section size at the point they are used, not the final 
+	size.
+
+.	A bug that caused byte alignment when attempting to word 
+	align a section has been fixed.
+ 
+.	The linker version number has also been bumped due to added 
+	support for 68000 C cross-compilers.
+
+.	The debugger has some significant bug fixes and can now dump
+	the active window to the printer.
+
+	1. Multiple target support will now handle switching targets
+	during the Abort/Retry ... phase.
+
+	2. Problems with displaying memory at the end of bank $08 have
+	been fixed.
+
+	3. Indirection in debugger expressions now defaults to being
+	unsigned so that expressions such as 7e0000+[ptr] are evaluated
+	correctly when [ptr] > $8000
+	
+	4. Effective address display will now conform to the way the 
+	65816 works. Thus 
+
+		lda	$ffff,x 
+
+			where db = $7e
+			      x  = $1
+
+	now resolves to $7f0000 NOT $7e0000.
+
+	5. A bug in running to cursor where the cursor resides on a 
+	breakpoint is now fixed.
+
+	6. Locking a window whilst it is in disassembly mode and then 
+	changing to a hex display no longer crashes the debugger.
+
+
+	7. Alt-P will dump a copy of the active window to the printer.
+
+.	Snlib has had its version number bumped because of additions 
+	to its support for 68000 C cross compilers.
+ 
+
+*****************************************************************************
+SNASM658 1.17
+SNBUG658 1.42
+SNLINK   1.19
+SNLIB    1.08
+SCSILINK 1.5
+
+.	The debugger file window has been re-written. There is little 
+	difference to the user in the way it operates. Key assignments have 
+	been altered so that Ctrl-S/Ctrl-R saves/restores registers in all 
+	windows and Alt-S/Alt-N  starts/resumes a search.
+
+
+*****************************************************************************
+SNASM658 1.17
+SNBUG658 1.40
+SNLINK   1.19
+SNLIB    1.08
+SCSILINK 1.5
+
+.	Fixed bug in debugger that 'lost' MX records in disassembly.
+
+
+*****************************************************************************
+SNASM658 1.17
+SNBUG658 1.39
+SNLINK   1.19
+SNLIB    1.08
+SCSILINK 1.5
+
+.	Fixed bug in assembler that crashed if more that 256 include files
+	used.
+
+.	Fixed bug in assembler that allowed infinite macro expansion.
+
+.	Fixed bug in assembler that 'lost count' of parenthesis.
+
+.	Un-step added to the debugger on Alt-F4/Alt-F7
+
+.	Functions added to linker to support object file conversion for
+	C 68000 cross-compilers.
+
+.	Better detection of illegal addressing modes added to the assembler.
+
+.	option ow+/- has been added to the assembler to generate a warning 
+	when absolute addressing has been assumed. This is designed to help 
+	'update' code that was written when the assembler assumed long 
+	absolute mode when it didn't know the operand value. 
+
+.	Problems with scsilink and fast 486's fixed with the addition of
+	extra timeouts.
+
+
+*****************************************************************************
+SNASM658 1.13
+SNBUG658 1.38
+SNLINK   1.18
+SNLIB    1.08
+SCSILINK 1.4
+
+.	The linker has been profiled and many speed improvements have been
+	made.
+
+.	Linker now deletes the files created by the file() attribute on
+	groups if assembly fails.
+
+.	Problems in assembler caused by & continuation if white space (ws)
+	was enabled fixed.
+
+.	Errors in the inform statement don't no have their output appended
+	onto the inform output.
+
+.	You now don't need to define groups in your source code. Any
+	section that isn't placed in a group at assembly time can be assigned
+	to a group in the linker command file.
+
+.	Fixed problems with case sensitivity in debugger CLI.
+
+.	Fixed problems with debugger windows being left blank if a key was
+	pressed during loading with auto-update off.
+
+.	A new variable called __mx has been added which hold the current value
+	of the mx variable according to the assembler.
+
+.	Major changes to the way the assembler handles addressing modes.
+	See info. at end of this fix report. There are some changes in here
+	from the version 1.12 so everyone should have a read.
+
+.	Effective address display added to top of disassembly window.
+
+.	Extra code added to enable to debugger to 'sync' its disassembly
+	better.
+
+.	The debugger now understands the memory map of the console so labels
+	should be visible no matter what the DB reg holds.
+
+
+Changes to addressing mode handling
+-----------------------------------
+65816 assembler :
+
+The addressing mode stuff has been changed to conform with WDC spec.
+
+There is now an optimisation option   opt od-/+  which enables the
+optimisation to direct page access to take place.  Default is off.
+
+opt t-/+ .  When enabled truncates values in db/dw statements and immediate
+operand values to the required size. Default is off.
+
+opt ta+/-. When enabled truncates all address operands to the required size.
+Default is on.
+
+Immediate operands can specify the bytes of the operand to use as
+in WDC spec, eg.
+
+                             short accumulator      long accumulator
+   lda  #$12345678    ->          lda #$78             lda #$5678
+   lda  #<$12345678   ->          lda #$78             lda #$5678
+   lda  #>$12345678   ->          lda #$56             lda #$3456
+   lda  #^$12345678   ->          lda #$34             lda #$1234
+
+
+Absolute addressing modes can be forced, eg. :
+
+   lda <$12345678     ->          lda $78      direct page
+   lda |$12345678     ->          lda $5678    absoulte
+   lda >$12345678     ->          lda $345678  long absoulte
+
+Absoulte addressing modes should now behave as follows when no overiding
+mode is specified :
+
+(1)  The address is evaluated.
+(2)  If direct page optimisation is on then the assembler will try
+     to convert to this mode.
+(3)  If (2) fails then the assembler will normally use absolute mode
+     unless it can determine that absolute long mode is necessary in
+     which case it will use that mode. It will no longer use long
+     absolute mode when it doesn't know the operand value.
+
+Assumes :
+
+In the following the operand value is known if (1) the operand can be
+evaluated, (2) the operand is at a known offset from the start of an
+org'd section, (3) the operand is at a known offset from the start
+of a section which is known to be the first section in an org'd group
+or (4) the operand is at a known offset from the start of the very
+first section which will takes its base address from the first org
+in the program.
+
+if opt od+ is in effect then
+
+(1) if d is not assumed then known operands in the range 0-255 will
+    be converted to direct page access.
+
+(2) if d is assumed to a constant value then conversion to direct
+    access will take place when the operand value is 0-255 more than
+    that value.
+
+(3) if d is assumed to a section then direct mode will be used if the
+    operand is known and is at an offset 0-255 from the start of that
+    section or if the operand is a symbol in that section.
+
+(4) if d is assumed to a group then direct mode will be used if the
+    operand is known and is at an offset 0-255 from the start of that
+    group or if the operand is a symbol in that group.
+
+
+Long absolute mode will be used when
+
+(1) if db is not assumed and the operand value is known and greater
+    than $ffff.
+
+(2) if db is assumed to a constant value and the operand value is
+    known and is less than that value or more than $ffff greater
+    than it unless it can be accessed by virtue of the mirroring
+    of ram & hardware registers in certain parts of the sfx memory map.
+
+(3) if db is assumed to a section which is org'd and the operand value
+    is not in the same bank allowing for mirroring of ram and hardware
+    registers.
+
+(4) if db is assumed to a group which is org'd and the operand value
+    is not in the same bank allowing for mirroring of ram and hardware
+    registers.
+
+
+*****************************************************************************
+SNASM658 1.10
+SNBUG658 1.29
+SNLINK   1.15
+SNLIB    1.08
+SCSILINK 1.4
+
+.	The jsr/jmp absolute instructions now get the bank information
+	correct so labels are always used correctly.
+
+.	Tracing problems in debugger are now definately fixed.
+
+.	Debugger CLI parsing has been rewritten as the multi-target support
+	introduced some problems. You shouldn't notice any changes so if you
+	do report it as a bug.
+
+*****************************************************************************
+SNASM658 1.10
+SNBUG658 1.25
+SNLINK   1.15
+SNLIB    1.08
+SCSILINK 1.4
+
+.	The assembler now allows question marks in labels.
+
+.	The l+/- option has been expanded to allow (almost) any character
+	to be used for a local label. You can specify any character here
+	but only a few will work without causing problems. The main one
+	this feature was added for was colon.
+	opt	l:	; set local label char to colon
+
+.	The debugger had improved multi-target facilities. You can now
+	specify several targets on the command line and they can all
+	have seperate .cpe files and symbol tables. Unless you regularly
+	debug on two machine simultaniously you can ignore this option.
+
+.	More timeouts have been added to SCSILINK
+
+.	If the assembler can't evaluate the expression to which an equ
+	has been done it now substitutes the full expression where needed.
+	This means that you can equate something to an offset from an xref'd
+	symbol, equate something to an expression involving the pc when
+	linking etc.
+
+.	Grouporg function added which tells you the physical address at which
+	a group has been placed. This is mainly for use when you use the
+	obj directive on groups to find where the group is in memory to
+	allow it to be relocated.
+
+.	The < and > operators now have a very low priority so that
+	lda	#<123+456
+	Gives the low byte of the full expression.
+
+.	A new option, B, has been added which swaps the meaning of < and >
+	when they are used as high/low byte operators
+
+.	The instructions rep, sep and cop now allow their operands to be
+	preceeded by a hash for compatability reasons.
+
+.	Ampersand (&) has been added as a general purpose line continuation
+	character. e.g.
+	MyMacro	1,2,3,4,&
+		5,6,7
+	This can be used at the end of any line except in the middle of
+	a string.
+
+.	You can now have a size on a short macro (i.e. mybcc.s)
+
+.	If you have sections in unnamed groups in your source you can
+	place them into groups in the linker command file. e.g.
+	In source
+s1	section word
+	...
+
+s2	section word
+	...
+	end
+
+	In linker command file
+g1	group	word
+
+	section	s1,g1
+	section	s2,g2
+
+	include	source.obj
+
+	The group attributes *bss, word etc) must match the attributes of
+	the sections or an error will be raised.
+
+*****************************************************************************
+SNASM658 1.09
+SNBUG658 1.23
+SNLINK   1.13
+SNLIB    1.06
+SCSILINK 1.3
+
+.	Occasional problem tracing using snbug658 V1.19 fixed. Things seem
+	to check out now but contact us if there are any more problems.
+
+.	The linker now has a new switch /b which makes in link in 'big mode'.
+	This slightly increases link time (even a small disk cache will make
+	this inconsequential though) but allows very much more complex
+	projects to be linked.
+
+
+*****************************************************************************
+SNASM658 1.09
+SNBUG658 1.19
+SNLINK   1.12
+SNLIB    1.06
+SCSILINK 1.3
+
+.	The linker now allows groups to be orged to different addresses and
+	it also allows use of org ?size,type just like in the assembler.
+	Please note that only one ordinary org command should be used in the
+	linker command file and that this org will set the base address for
+	all groups that aren't orged seperately. The size parameter must be
+	a decimal or hex number as the object files have not been read by
+	this point to you will need to look at your map file to see how
+	much room to reserve for different groups.
+
+.	To go with DB and DW we have added DT and DL. These are for putting
+	down three byte and four byte constants. These were in version
+	1.08 but weren't documented.
+
+.	Assume can now be used to tell the assembler that a group is direct
+	addressable. Syntax is :-
+DirectGroup	group
+		assume	d:DirectGroup
+	Any variables in this group will be accessed using the direct
+	addressing mode (if legal) as long as they are defined before they
+	are referenced.
+
+*****************************************************************************
+SNASM658 1.08
+SNBUG658 1.16
+SNLINK   1.11
+SNLIB    1.06
+SCSILINK 1.3
+
+.	The linker always used to be case sensitive but now it has a switch
+	in the same way as the assembler. To be compatible with the assembler
+	the linker now works case insensitive by default so you may need to
+	set a switch to maintain the status quo. Type snlink on its own
+	for an up to date list of linker switches.
+
+.	The assembler now reports the file/line where a structure was opened
+	if it isn't closed properly. This works for all of the structures
+	including modules and if's.
+
+.	The linker now stops if ESC is pressed whilst it is running. It
+	also tidies up open files if it is Ctrl-C'd.
+
+.	The assembler now writes the processor type into .obj files to
+	allow the linker to correctly handle regs commands. The linker
+	will give a warning if various .obj files were produced by different
+	assemblers but you are still free to do this. This has cured the bug
+	which occurred if you set the registers in a linker command file
+	when you were generating a .cpe file.
+
+.	To reduce the 'red tape' when you want just one section per group
+	you can now attach attributes to a section definition. Example -
+Code	section	bss org($7E000)
+	This can be used whether or not you are linking. If you use this
+	feature you loose the ability to have several sections in the same
+	group.
+
+.	The type() function now returns zero if its argument isn't the
+	name of a symbol rather than giving an error. So type(Fred+3)
+	returns zero as opposed to giving an error.
+
+.	There is now another special macro
+	parameter \_.  This returns the whole of the line following a
+	macro invocation from after the name of the macro until the end of
+	line or comment.  This feature can be used when you are invoking a
+	macro from within a macro but as macros are stored without comments
+	the parts of the line after white space will have been removed.
+
+.	There were a few problems with forward referenced equates whilst in
+	link mode which have now all been fixed. These occurred when you did
+	something like :-
+a	equ	b
+b	equ	c
+c
+	and the assembler had to evaluate the equs at the end of the first
+	pass.
+
+.	There is now no need to preceed a macro parameter with a backslash
+	when it is being used in an expression. You will still need the
+	backslash, and possible another at the end of the name, in all other
+	cases. For example -
+fred	macro	x,y
+	dw	x,y			; no backslash required
+	db	'X is \x and Y is \y'	; but is required here
+	db	'123\x\456		; both backslashes required
+
+.	The sect and offset functions now work correctly even when you are
+	linking i.e. sect(x)+offset(x) will always equal x. This means however
+	that neither sect nor offset can be evaluated until link time. If
+	you require the offset into the current modules contribution to a
+	section you will need to place a label at the start of the section
+	and do the subtract yourself.
+
+.	Partly in response to the above the alignment function has been added.
+	This tells you the offset from the section'ss alignment type (byte,
+	word or long) its argument is. In a byte aligned section alignment(x)
+	will always return 0, in a word aligned one it will return 0 or 1, and
+	in a long word aligned one 0 .. 3.
+	This function is usually used to check if the PC is odd or even as
+	in this example.
+
+	if alignment(*)&1
+		db	0	; pad with a zero to word boundary
+	endif
+
+*****************************************************************************
+SNASM658 1.05
+SNBUG658 1.16
+SNLINK   1.09
+SNLIB    1.05
+SCSILINK 1.3
+
+.	Bug the caused branches to be reported out of range has been fixed
+
+.	As search has been added on Alt-S save and restore regs are now on
+	Ctrl-S and Ctrl-R
+
+.	SCSI errors in the debugger are auto-retried. If you abort you
+	get a chance to save the config file.
+
+.	The assembler now traps Ctrl-C and Ctrl-Break and exits gracefully.
+
+.	The @ operator has been added. It is used in expressions when you
+	need the value of the current PC.
+	Example
+	dw	@,@,@		; The three words will be 2 bytes apart.
+	dw	Fred-@,Start-@	; The offsets are from the current word.
+	The @ differs from the * in that * is the pc at the start of the line
+	whereas @ is advanced during the line.
+
+.	The debugger can now disassemble to file using Ctrl-D when in a
+	disassembly window. You are prompted for file name and range.
+
+.	Search has been added to the debugger on Alt-S. This works in
+	disassembly windows where you are prompted for instruction text to
+	search for, and in hex windows where you are prompted for a list
+	of values (or expressions) to search for. The search size (byte,word,
+	long) is decided by the current data size of the window (changed with
+	Alt-W). If you preceed the search expression with a double quote you
+	can search for ASCII text in a memory window.
+
+.	A bug that stopped F6 taking you around once more if the cursor was
+	at the current PC has been fixed.
+
+.	Update flag and interval are now saved in debugger config files.
+
+.	Aborting due to SCSI error now gives you the option of saving the
+	config file.
+
+.	Upload now verifies if you want to overwrite an existing file.
+
+.	The CLI option for label level now overrides the setting in the
+	config file. Update flag and interval work the same way.
+
+.	A bug in SCSILINK which occured for large send/receives which crossed
+	two 64k boundaries. This didn't affect any of the SNASM utilities as
+	they typically use 32K buffers which avoids the problem.
+
+.	Due to the large amount of work that has gone into the assembler and
+	linker, we have changed the version number in the OBJ files so you
+	will need to use all of the new tools as a set.
+
+.	A peculiarity with absolute indirect has been cleared up.
+
+.	A bug which caused some branches to be reported out of range has been
+	fixed.
+
+.	DCB and DCW now advance the PC correctly!
+
+*****************************************************************************
+SNASM658 1.03
+SNBUG658 1.05
+SNLINK   1.05
+SNLIB    1.02
+SCSILINK 1.2
+
+.	Bug when assembling
+	dcb	50000,$ff
+	has been fixed
+
+.	opt ws+/- switches between the 68000 and 65816 treatment of white
+	space in operands.
+	opt	ws-
+	you then don't need to use a semi-colon to introduce a comment but
+	you can't write things like ...
+	lda	#3 + 2
+
+.	Several new group attributes have been added.
+	Size	Set maximum size of group. Warning if exceeded.
+	Obj	Assemble whole group to run at different address.
+	File	Write group to binary file. Now works in linker.
+	Over	Put two or more groups on top of each other for overlays.
+	See section on new linker command file format for more info.
+
+.	Assembler no longer insists on an org statement. It is now back as
+	before so the manual examples will work again!
+
+.	Debugger now does an auto-retry after 1/2 second when it gets a
+	SCSI error.
+
+.	Problems with multiple file windows have been fixed.
+
+.	Linker has a totally new command file syntax as below.
+	;			Comment
+	include	filename	Specify object file to read.
+				Can be in quotes. Default extension .obj
+	incbin	filename	Specify library file to search.
+				Can be in quotes. Default extension .lib
+	org	address		Give org address of program. The ? stuff
+				works as before.
+	regs	pc=value	Give start address. This will soon work for
+				the other registers.
+name	equ	value		Equate a symbol
+name	group	[bss,org(val),over(name),word,file("name"),obj(val),
+		size(val),bank(val)]
+				Define a group and attributes. Group order
+				is determined by order of group statements.
+	section	name[,group]	Define a section and state which group it
+				is in. Section ordering is determined by
+				order of section statements.
+	workspace address	Move workspace if downloading. The workspace
+				command doesn't currently work with CPE
+				files but will in a future release.
+
+Example
+		include	sorter.obj
+		include	output.obj
+		org	1024
+		regs	pc=ProgStart
+LowGroup	group	word
+CodeGroup	group
+BssGroup	group	bss
+		section	Data1,LowGroup
+		section	Data2,LowGroup
+		section	Code1,CodeGroup
+		section	Code2,CodeGroup
+		section	Tables,BssGroup
+		section	Buffers,BssGroup
+
+To clear up any confusion about group attributes.
+	If you aren't linking all attributes should be specified in the
+	assembler source.
+
+	If you are linking the only attribute you should use in the source
+	are word and bss. All the others should be specified in the linker
+	command file.
+
+

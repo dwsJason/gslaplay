@@ -1,0 +1,164 @@
+; Some rather complex macros to add strucures (sort of) to your assembly
+; language programs. (Needs SNASM >=0.21)
+
+; This is presented as a starting point for discussion rather than a working
+; and useable piece of code
+
+; It may take you a while to figure out how these macros work but it is worth
+; the effort!
+
+
+; Run through the field array of Type and define all the offsets from Name
+
+Define	macro	Name,Type
+
+	local	TagNum,Temp
+
+TagNum	=	0
+\Name	equ	*
+
+	rept	\Type\_Count
+
+Temp	equs	\Type\_\#TagNum
+
+\Name\_\Temp	equ	\Name+\Type\_\Temp
+
+TagNum	=	TagNum+1
+
+	endr
+
+	ds.b	\Type\_Size
+
+	endm
+
+
+; Initialise a field array
+
+Record	macro	Name
+
+_RecName	equs	'\Name'
+
+_RecCount	=	0
+
+	rsreset
+
+	endm
+
+
+; Add a name to the current field array
+
+NewName	macro	Name
+
+\_RecName\_\#_RecCount equs '\Name'
+
+_RecCount	=	_RecCount+1
+
+	endm
+
+
+; Terminate field array
+
+Recend	macro
+
+\_RecName\_Size	equ	__RS
+
+\_RecName\_Count	equ	_RecCount
+
+	endm
+
+
+; Add either a simple type or a structure to the current field array
+
+RI	macro	Name,Field
+
+	local	TagNum,Temp,Base
+
+; Check for simple types
+
+	if	strcmp('\Field','byte')
+
+\_RecName\_\Name	rs.b	1
+
+	NewName	\Name
+
+	elseif	strcmp('\Field','word')
+
+\_RecName\_\Name	rs.b	2
+
+	NewName	\Name
+
+	elseif	strcmp('\Field','long')
+
+\_RecName\_\Name	rs.b	4
+
+	NewName	\Name
+
+	else
+
+; It's a structure so run through field array adding new names
+
+\_RecName\_\Name equ	__RS
+
+	NewName \Name
+
+TagNum	=	0
+Base	=	__RS
+
+	rept	\Field\_Count
+
+Temp	equs	\Field\_\#TagNum
+
+\_RecName\_\Name\_\Temp equ Base+\Field\_\Temp
+
+	NewName \Name\_\Temp
+
+TagNum	=	TagNum+1
+
+	endr
+
+	rs.b	\Field\_Size
+
+	endif
+
+	endm
+
+; Now define some structures
+
+	Record Point
+	RI	X,word
+	RI	Y,word
+	Recend
+
+	Record Rectangle
+	RI	P1,Point
+	RI	P2,Point
+	Ri	Colour,word
+	Recend
+
+
+; now use them
+	org	$1000
+
+	Define Fred,Rectangle
+
+	list
+
+; so I can now do
+
+	move.w #4,Fred_P1_X
+	lea	Fred_P1(pc),a0
+	add.w	#4,Point_X(a0)
+; and
+	lea	Fred,a0
+	move.w #12,Rectangle_P1_X(a0)
+	lea	Rectangle_P1(a0),a1	;a1 points at point 1 in fred
+	move.w Point_X(a1),d0
+	end
+
+; I would of course prefer something like :-
+
+	move.w #4,Fred->P1->X
+	lea	Fred->P1(pc),a0
+	add.w	#4,Point->X(a0)
+
+; any ideas on a nice syntax for these structures or does everyone hate them?

@@ -1,0 +1,89 @@
+
+SNGRAB.
+
+
+SnGrab is a SNASM utility designed to 'grab' the contents of memory from a 
+target machine and store it in a specified file(s) on the parent PC. SnGrab 
+can then download from the specified file(s) to the target machine at a
+later date.
+
+SnGrab is used as follows: 
+
+	sngrab [/t - target num] +|- inputfile
+where :
+	target is the SCSI ID of the active target (default 7)
+	+|- indicate the direction of data transfer - '+' = to the target
+	'-' = from the target
+	inputfile contains filenames to read\write and their corresponding
+	memory areas
+
+The following example of an 'inputfile' is designed to upload the contents 
+of the lowest 512K of memory on a SNES into the files r:\demo1-16.
+
+
+!r:\demo1.bin
+8000   to	10000
+!r:\demo2.bin
+18000 	to 	20000
+!r:\demo3.bin
+28000 	to 	30000
+!r:\demo4.bin
+38000 	to 	40000
+!r:\demo5.bin
+48000 	to 	50000
+!r:\demo6.bin
+58000 	to 	60000
+!r:\demo7.bin
+68000 	to 	70000
+!r:\demo8.bin
+78000 	to 	80000
+!r:\demo9.bin
+88000 	to 	90000
+!r:\demo10.bin
+98000 	to 	A0000
+!r:\demo11.bin
+A8000 	to 	B0000
+!r:\demo12.bin
+B8000 	to 	C0000
+!r:\demo13.bin
+C8000 	to 	D0000
+!r:\demo14.bin
+D8000 	to 	E0000
+!r:\demo15.bin
+E8000 	to 	F0000
+!r:\demo16.bin
+F8000 	to 	100000
+
+
+The following would load the same memory areas into one file;demo.bin.
+
+
+!demo.bin
+8000   to	10000
+18000 	to 	20000
+28000 	to 	30000
+38000 	to 	40000
+48000 	to 	50000
+58000 	to 	60000
+68000 	to 	70000
+78000 	to 	80000
+88000 	to 	90000
+98000 	to 	A0000
+A8000 	to 	B0000
+B8000 	to 	C0000
+C8000 	to 	D0000
+D8000 	to 	E0000
+E8000 	to 	F0000
+F8000 	to 	100000
+
+
+
+Assuming that the 'inputfile' is called demo.dat the following command line
+will upload the memory from the target machine
+
+sngrab - demo.dat
+
+and the following will download from the PC to the target
+
+sngrab + demo.dat
+ 
