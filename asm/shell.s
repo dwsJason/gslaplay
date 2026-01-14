@@ -55,6 +55,15 @@ SetRes   sep   $30        ; 8-bit mode
          lda   #^Resume   ; bank byte
          stal  $3FB       ; $3fb,3fc
 
+         ; we need to know where the direct page is, since we're going to use
+         ; 2 of them
+         phd
+         pla
+         sta   DPage      ;Save the base of the direct page, so we can have 2 of them
+         clc
+         adc   #$100
+         sta   DPage2
+
          _TLStartUp       ;Gotta start this baby
 
          ~MMStartUp       ;start the Memory manager
@@ -68,6 +77,8 @@ SetRes   sep   $30        ; 8-bit mode
 ; Initialize List of memory Banks
 ;
          stz <banks_count
+         ldx #$100
+         stz <banks_count,x
 
 ;-------------------------------------------------------------------------------
          PushLong  #0                   ; Compact Memory
@@ -300,6 +311,8 @@ path     ds    512        ;space for pathname
 fullp    ds    768
 
 ProgID   dw    0
+DPage    dw    0          ; going to assume we have room for 2 of these
+Dpage2   dw    0          ; just keep it precalculated
 
 
 *  ShutDown Routine
@@ -483,7 +496,7 @@ AboutTemplate
          da    0
          adrl  0
 :Item3Txt
-         str   '(C) 2020 DreamWorld Software'
+         str   '(C) 2026 DreamWorld Software'
 
 :Item2   dw    2
          dw    13,122,22,251 ;rect
@@ -492,7 +505,7 @@ AboutTemplate
          da    0
          da    0
          adrl  0
-:Item2Txt str  'GSLA Player v1.0'
+:Item2Txt str  'GSLA Player v1.1'
 
 :Item1   da    1
          dw    66,272,78,350 ;rect
@@ -631,6 +644,10 @@ DoOpen
 :close_exit
          _Close p:close
          bcs   :trouble
+;------------------------------------------------------------------------------
+; PATCH TO CHECK FOR OPTIONAL INTERLACED ANIMATION FILE
+
+;------------------------------------------------------------------------------
          brl   PlayAnimation
 
 :required_banks

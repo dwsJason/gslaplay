@@ -61,7 +61,7 @@ disk image: gs
 	cadius addfile $(TARGETNAME).po /$(TARGETNAME) ./$(TARGETNAME).sys16
 
 run: image
-	gsplus32
+	kegs
 
 clean:
 	@echo Remove $(TARGETNAME).sys16
