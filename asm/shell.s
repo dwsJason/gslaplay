@@ -61,7 +61,7 @@ SetRes   sep   $30        ; 8-bit mode
          pla
          sta   DPage      ;Save the base of the direct page, so we can have 2 of them
          clc
-         adc   #$100
+         adc   #$200	  ; decided to give it a larger gap, to support more than 8mb of RAM
          sta   DPage2
 
          _TLStartUp       ;Gotta start this baby
@@ -77,7 +77,7 @@ SetRes   sep   $30        ; 8-bit mode
 ; Initialize List of memory Banks
 ;
          stz <banks_count
-         ldx #$100
+         ldx #$200
          stz <banks_count,x
 
 ;-------------------------------------------------------------------------------
@@ -506,7 +506,7 @@ AboutTemplate
          da    0
          da    0
          adrl  0
-:Item2Txt str  'GSLA Player v1.1'
+:Item2Txt str  'GSLA Player v1.1(VOC)'
 
 :Item1   da    1
          dw    66,272,78,350 ;rect
