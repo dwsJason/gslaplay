@@ -58,7 +58,7 @@ player  ent
         bra first_frame
         bra next_frame
 
-pData   ds 4
+pData   ds 8
 
 first_frame
         stz <banks_index
@@ -70,9 +70,8 @@ first_frame
 next_frame
         rep #$31
         ldy #$2000               ; it's a new frame, cursor starts at beginning of SHR
-
-
         bra     read_opcode
+
 *frames dw 0
 
 extended_command

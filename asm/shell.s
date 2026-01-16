@@ -26,6 +26,9 @@
 banks_count equ $80
 banks_data  equ $82
 
+pData    = $4
+filesize = $8
+
 
 
 vidmode  =     $8080      ;Video mode for QD II (320) ($8000)
@@ -502,7 +505,7 @@ AboutTemplate
          str   '(C) 2026 DreamWorld Software'
 
 :Item2   dw    2
-         dw    13,122,22,251 ;rect
+         dw    13,122,22,300 ;rect
          da    StatTextItem+ItemDisable
          adrl  :Item2Txt
          da    0
@@ -568,6 +571,11 @@ DoOpen
          brl    :trouble
 
 :eof_seems_good
+
+        lda p:eof
+        sta <filesize
+        lda p:eof+2
+        sta <filesize+2
 
 *
 *  Allocate memory for loading the animation
@@ -652,11 +660,14 @@ DoOpen
 ; crawl the full path backwards, looking for 0 0x30 or : 0x3A
 ; to detect if it's possible that we have a VOC anim
 
+         lda |VOCAnim
+         bne :play
+
          sep #$30
          ldx fullp
 ]lp      lda fullp,x
          cmp #$30
-         bne :found_something
+         beq :found_something
          cmp #$3A
          beq :play
          dex
@@ -673,6 +684,9 @@ DoOpen
          bcs :play
          
 ; There's a second file!  Load it up
+
+         lda |DPage2
+         tcd
 
          inc VOCAnim
          brl :read_filesize
@@ -727,58 +741,39 @@ scbs_and_palette
 LoopAnimationFlag dw 0 ; Set to 1 while animation is looping
 LastTickCount adrl 0
 
-pData = $4
 
 PlayAnimation mx %00
 
         lda |DPage
         tcd
 
-        ; First verify that the file, looks like what it should be
-        stz <pData
-        lda <banks_data
-        and #$00FF
-        sta <pData+2
+        jsr BackupEnv
 
-        ; pData now points to the first 64KB of the file
+        ; We get here, so in theory we have to animations ready to play
+        jsr ValidateHeader
+        bcc :header1_is_good
 
-        ; Check 'GSLA'
-        lda [pData]
-        cmp #'GS'
-        bne :BadHeader
-
-        ldy #2
-        lda [pData],y
-        cmp #'LA'
-        bne :BadHeader
-        iny
-        iny
-
-        ; Check Size Field for Sanity
-        lda [pData],y
-        cmp p:eof
-        bne :BadSize
-        iny
-        iny
-
-        lda [pData],y
-        cmp p:eof+2
-        bne :BadSize
-
-        ; Probably check more things
-
-        brl :good_header
-
-:BadSize
-:BadHeader
+:badheader
         ; Notif
-
         jsr DoInvalidFile
-
         jsr FreeBanks
         rts
 
-:good_header
+:header1_is_good
+
+        lda VOCAnim
+        beq :not_voc
+
+        lda |DPage2
+        tcd
+
+        jsr ValidateHeader
+        bcs :badheader
+        
+        lda DPage
+        tcd
+
+:not_voc
 
         ; The mouse cursor doesn't play nice with what we're doing
         _HideCursor
@@ -795,7 +790,10 @@ PlayAnimation mx %00
 
 		; copy player to the Direct Page
 	
-        ;pei pData
+        ; this is where the frame buffer lives
+        ; copy down first copy of player
+        lda #$0101
+        sta >dict+1
 	
 	lda #127  ; player is less than 128 bytes
 	ldx #player
@@ -806,6 +804,22 @@ PlayAnimation mx %00
 	sty :init+1
 		
 	mvn ^player,$00	
+        phk
+        plb
+
+        ;
+        ; copy down a second copy of the player
+        ;
+
+        lda #$E0E0
+        sta >dict+1
+
+	lda #127  ; player is less than 128 bytes
+	ldx #player
+	ldy DPage2
+	;sty :play0+1
+        ;sty :play1+1
+	;sty :init+1
 
 	phk
 	plb
@@ -895,6 +909,8 @@ PlayAnimation mx %00
         phk
         plb
 
+
+        jsr RestoreEnv
 
         ;
         ; Redraw the Screen
@@ -1027,3 +1043,93 @@ FreeBanks mx %00
         rts
 
 ********************************************************************************
+
+ValidateHeader mx %00
+        ; First verify that the file, looks like what it should be
+        stz <pData
+        lda <banks_data
+        and #$00FF
+        sta <pData+2
+
+        ; pData now points to the first 64KB of the file
+
+        ; Check 'GSLA'
+        lda [pData]
+        cmp #'GS'
+        bne :BadHeader
+
+        ldy #2
+        lda [pData],y
+        cmp #'LA'
+        bne :BadHeader
+        iny
+        iny
+
+        ; Check Size Field for Sanity
+        lda [pData],y
+        cmp <filesize
+        bne :BadSize
+        iny
+        iny
+
+        lda [pData],y
+        cmp <filesize+2
+        bne :BadSize
+
+        ; Probably check more things
+
+        brl :good_header
+
+:BadSize
+:BadHeader
+        sec
+        rts
+
+:good_header
+        clc
+        rts
+
+;------------------------------------------------------------------------------
+
+BackupEnv mx %00
+        SEP       #$30                 ; Backup Environment values (color, border...)
+        LDA       >$00C022
+        STA       >BE_C022
+        LDA       >$00C029
+        STA       >BE_C029
+        LDA       >$00C034
+        STA       >BE_C034
+        LDA       >$00C035
+        STA       >BE_C035
+	lda	  >$00C0B1
+	sta       >BE_C0B1
+	lda       >$00C0B5
+	sta       >BE_C0B5
+        REP       #$30
+        RTS
+*-----
+
+RestoreEnv mx %00
+        SEP       #$30                 ; Restore Environment values (color, border...)
+	LDA       >BE_C0B5
+	STA       >$00C0B5
+	LDA	  >BE_C0B1
+	STA       >$00C0B1
+        LDA       >BE_C035
+        STA       >$00C035
+        LDA       >BE_C034
+        STA       >$00C034
+        LDA       >BE_C029
+        STA       >$00C029
+        LDA       >BE_C022
+        STA       >$00C022
+        REP       #$30
+        RTS
+
+BE_C022     db       00                   ; Background Color
+BE_C029     db       00                   ; Linearization of the Graphic Page
+BE_C034     db       00                   ; Border Color
+BE_C035     db       00                   ; Shadowing
+BE_C0B1     db       00 ; VOC
+BE_C0B5     db       00 ; VOC - 400 mode
+;------------------------------------------------------------------------------
