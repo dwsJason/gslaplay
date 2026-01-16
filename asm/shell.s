@@ -312,7 +312,8 @@ fullp    ds    768
 
 ProgID   dw    0
 DPage    dw    0          ; going to assume we have room for 2 of these
-Dpage2   dw    0          ; just keep it precalculated
+DPage2   dw    0          ; just keep it precalculated
+VOCAnim  dw    0          ; set to true if it's a VOC ANIM
 
 
 *  ShutDown Routine
@@ -560,7 +561,7 @@ DoOpen
          _GET_EOF p:get_eof
          bcc   :eof_seems_good
 :err_close
-        jsr FreeBanks
+         jsr FreeBanks
          _Close p:close
          bra    :trouble
 
@@ -646,7 +647,38 @@ DoOpen
          bcs   :trouble
 ;------------------------------------------------------------------------------
 ; PATCH TO CHECK FOR OPTIONAL INTERLACED ANIMATION FILE
+; crawl the full path backwards, looking for 0 0x30 or : 0x3A
+; to detect if it's possible that we have a VOC anim
 
+         sep #$30
+         ldx fullp
+]lp      lda fullp,x
+         cmp #$30
+         bne :found_something
+         cmp #$3A
+         beq :play
+         dex
+         bne ]lp
+         bra :play
+
+:found_something
+         inc
+         sta fullp,x
+
+; Try to open this second file
+         rep #$30
+         _Open p:open
+         bcs :play
+         
+; There's a second file!  Load it up
+
+         inc VOCAnim
+         lda DPage2
+         tcd
+         jsr FreeBanks
+         bra :read_filesize
+
+:play    rep #$30
 ;------------------------------------------------------------------------------
          brl   PlayAnimation
 
@@ -659,6 +691,10 @@ DoOpen
          PushLong #0
          ldx   #$1503
          jsl   $e10000
+
+         lda DPage
+         tcd
+         stz VOCAnim
          rtl
 
 :message str   'Open GS Lzb Anim:'
