@@ -319,7 +319,7 @@ ProgID   dw    0
 DPage    dw    0          ; going to assume we have room for 2 of these
 DPage2   dw    0          ; just keep it precalculated
 VOCAnim  dw    0          ; set to true if it's a VOC ANIM
-
+voc_x    dw    0
 
 *  ShutDown Routine
 
@@ -769,6 +769,19 @@ PlayAnimation mx %00
 
         jsr ValidateHeader
         bcs :badheader
+
+        ;----------------------------------------------------
+        ; Enable the VOC
+	sep #$30
+;	Turn on SHR (c029:c1).  c0b1:39  c0b5:80.
+	lda #$39
+	sta >$E1C0B1
+	lda #$80
+	sta >$E1C0B5
+	lda #$C1
+	sta >$E1C029
+	rep #$30
+        ;----------------------------------------------------
         
         lda DPage
         tcd
@@ -817,22 +830,26 @@ PlayAnimation mx %00
 	lda #127  ; player is less than 128 bytes
 	ldx #player
 	ldy DPage2
-	;sty :play0+1
-        ;sty :play1+1
-	;sty :init+1
+	sty :play0_voc+1
+        sty :play1_voc+1
+	sty :init_voc+1
+	mvn ^player,$00
 
 	phk
 	plb
 
         inc |:play1+1
         inc |:play1+1
-
-        ;pla
-        ;sta <pData
-		
+        inc |:play1_voc+1
+        inc |:play1_voc+1
+	
+	
+;------------------------------------------------------------------------------
+	
 	; Pointer to the INITial Frame Data
         lda <banks_data
         and #$00FF
+        ora #$0100
         sta <pData+2
 
 	ldx #28    ; Header of file + Header of INIT Frame
@@ -843,6 +860,35 @@ PlayAnimation mx %00
 :init	jsl $000000 ; for the first frame
         phk
         plb
+
+;------------------------------------------------------------------------------
+
+        lda |VOCAnim
+        beq :skip_voc_init_frame
+
+        lda DPage2
+        tcd
+
+	; Pointer to the INITial Frame Data
+        lda <banks_data
+        and #$00FF
+        ora #$E000
+        sta <pData+2
+
+	ldx #28    ; Header of file + Header of INIT Frame
+
+        ; X = Low
+        ; A = High
+		
+:init_voc jsl $000000 ; for the first frame
+          phk
+          plb
+
+          lda DPage
+          tcd
+
+:skip_voc_init_frame
+;------------------------------------------------------------------------------
 
         ; Tell make sure looping is enabled
         lda #1
@@ -858,6 +904,7 @@ PlayAnimation mx %00
 
         sta LastTickCount
         stx LastTickCount+2
+
 
         ; load up a pointer to data
 :loop
@@ -877,9 +924,51 @@ PlayAnimation mx %00
 :play0  jsl $000000     ; first delta frame
         bcs :done_anim
 
+        ldal VOCAnim
+        beq :play1
+
+        phx
+
+        ldal DPage2
+        tcd
+
+        stz <pData
+
+	ldy  #24
+	lda [pData],y
+	clc
+	adc #28  ; 20 byte header + 8 bytes skip into the ANIM Block
+        tax
+		 
+        lda <pData+2
+:play0_voc
+        jsl $000000   ; first delta frame
+        txa
+        stal voc_x
+        ldal DPage
+        tcd
+        plx
+        bcs :done_anim
+
 :play1  jsl $000000     ; next frame
         php
         phx
+
+        ldal VOCAnim
+        beq :no_voc
+
+        ldal DPage2
+        tcd
+        ldal voc_x
+        tax
+:play1_voc
+        jsl $000000
+        ; sketchy shit, I need error checking
+        txa
+        stal voc_x
+        ldal DPage
+        tcd
+:no_voc
 
         jsl EndOfAnimFrame
         bcs :cancel_anim
@@ -897,6 +986,9 @@ PlayAnimation mx %00
 :done_anim
         phk
         plb
+
+        stz |VOCAnim
+
         ;
         ; Let the Memory go
         ;

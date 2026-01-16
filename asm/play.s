@@ -67,6 +67,8 @@ first_frame
         sta <srcbank+2           ; self modify the code for mvn
         sta <read_opcode+3       ; data stream reader
         sta <dictionary_offset+3 ; opcode stream reader
+        xba
+        sta <srcbank+1
 next_frame
         rep #$31
         ldy #$2000               ; it's a new frame, cursor starts at beginning of SHR
