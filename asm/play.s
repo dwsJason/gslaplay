@@ -55,16 +55,22 @@ banks_data  equ $82
 player  ent
         org $0
         mx %00
-        phb
+        bra first_frame
+        bra next_frame
+
+pData   ds 4
+
+first_frame
+        stz <banks_index
+*        stz <frames
         sep #$20                 ; preserve X
         sta <srcbank+2           ; self modify the code for mvn
         sta <read_opcode+3       ; data stream reader
         sta <dictionary_offset+3 ; opcode stream reader
+next_frame
         rep #$31
         ldy #$2000               ; it's a new frame, cursor starts at beginning of SHR
 
-        stz <banks_index
-*        stz <frames
 
         bra     read_opcode
 *frames dw 0
@@ -73,25 +79,14 @@ extended_command
         beq :source_skip_next_bank
         lsr
         lsr
-        bcs :end_of_file
-
         ; end of frame
         ; check elapsed ticks (need at least 1)
         ; For now just inline vsync (preferable to check the number of
         ; if jiffy that have elapsed, because if the animation uses more than
         ; roughly 10% of the screen we don't want to sync here
-        phx
 
-        jsl EndOfAnimFrame
-
-        plx
-        bcs :end_of_file
-
-        ldy #$2000
-        bra read_opcode
-
-:end_of_file
-        plb    ; restore bank
+        ; c=1 means end of file
+        ; c=0 means not end of file
         rtl
 
 :source_skip_next_bank
@@ -154,6 +149,7 @@ dictionary_offset
 
 copylen lda #$0000
         ; dictionary copy
+dict ent
         mvn $01,$01
 
         ldx dictionary_offset+1
@@ -168,6 +164,5 @@ skip_amount
         adc #$0000
         tay
         bra read_opcode
-
 banks_index dw 0
 

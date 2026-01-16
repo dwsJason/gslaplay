@@ -16,7 +16,8 @@
          dsk   shell.l
          use   drm.macs
 
-         ext   player
+         ext   player,dict
+
 
 
 ;
@@ -34,10 +35,11 @@ vidmode  =     $8080      ;Video mode for QD II (320) ($8000)
 
 tool     equ   $e10000
 
-
+         ; I guess I will have to do my own math here
+         ;adrl dict
+         ;adrl player
 startup  ent
          mx %00
-
          ; in theory here, our ProgID is already in A
          ; and our DP is already in D
          ;pha
@@ -563,7 +565,7 @@ DoOpen
 :err_close
          jsr FreeBanks
          _Close p:close
-         bra    :trouble
+         brl    :trouble
 
 :eof_seems_good
 
@@ -673,10 +675,7 @@ DoOpen
 ; There's a second file!  Load it up
 
          inc VOCAnim
-         lda DPage2
-         tcd
-         jsr FreeBanks
-         bra :read_filesize
+         brl :read_filesize
 
 :play    rep #$30
 ;------------------------------------------------------------------------------
@@ -728,9 +727,12 @@ scbs_and_palette
 LoopAnimationFlag dw 0 ; Set to 1 while animation is looping
 LastTickCount adrl 0
 
-pData = $FC
+pData = $4
 
 PlayAnimation mx %00
+
+        lda |DPage
+        tcd
 
         ; First verify that the file, looks like what it should be
         stz <pData
@@ -792,18 +794,27 @@ PlayAnimation mx %00
 		; before it can play the animation
 
 		; copy player to the Direct Page
-		
+	
+        ;pei pData
+	
 	lda #127  ; player is less than 128 bytes
 	ldx #player
 	phd
 	ply
-	sty :play+1
+	sty :play0+1
+        sty :play1+1
 	sty :init+1
 		
 	mvn ^player,$00	
 
 	phk
 	plb
+
+        inc |:play1+1
+        inc |:play1+1
+
+        ;pla
+        ;sta <pData
 		
 	; Pointer to the INITial Frame Data
         lda <banks_data
@@ -816,11 +827,10 @@ PlayAnimation mx %00
         ; A = High
 		
 :init	jsl $000000 ; for the first frame
-
-
+        phk
+        plb
 
         ; Tell make sure looping is enabled
-
         lda #1
         sta LoopAnimationFlag
 
@@ -845,17 +855,34 @@ PlayAnimation mx %00
 	adc #28  ; 20 byte header + 8 bytes skip into the ANIM Block
         tax
 		 
-        lda pData+2
+        lda <pData+2
 
 	; play the animation
         ; X = Low
         ; A = High
-        			
-:play   jsl $000000
+:play0  jsl $000000     ; first delta frame
+        bcs :done_anim
+
+:play1  jsl $000000     ; next frame
+        php
+        phx
+
+        jsl EndOfAnimFrame
+        bcs :cancel_anim
+        plx
+        plp
+        bcc :play1
 
         lda LoopAnimationFlag
         bne :loop
+        bra :done_anim
 
+:cancel_anim
+        plx
+        plp
+:done_anim
+        phk
+        plb
         ;
         ; Let the Memory go
         ;
@@ -964,6 +991,14 @@ AddBank mx %00
 * Free Memory, and Clear Bank List
 *
 FreeBanks mx %00
+
+        lda |DPage2
+        tcd
+        jsr :freeBanks
+        lda |DPage
+        tcd
+
+:freeBanks
 
 ]loop
         ldx <banks_count
